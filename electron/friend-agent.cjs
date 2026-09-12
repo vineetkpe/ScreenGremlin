@@ -1,6 +1,7 @@
 const MAX_MESSAGE_CHARS = 1200
 const MAX_REPLY_CHARS = 1800
 const REQUEST_TIMEOUT_MS = 12000
+const ALLOWED_ACTIONS = new Set(['play', 'pat', 'bonk', 'quiet'])
 
 function normalizeHttpsUrl(raw) {
   try {
@@ -34,7 +35,8 @@ function parseReply(payload) {
   const allowedExpressions = new Set(['neutral','happy','laugh','teasing','smug','angry','annoyed','sad','sleepy','shocked','curious','thinking','excited','embarrassed','focused','mischief'])
   const expression = allowedExpressions.has(payload?.expression) ? payload.expression : 'happy'
   const mood = String(payload?.mood || 'happy').slice(0, 32)
-  return { text, expression, mood }
+  const action = ALLOWED_ACTIONS.has(payload?.action) ? payload.action : undefined
+  return { text, expression, mood, action }
 }
 
 function createFriendAgent(config) {
@@ -58,6 +60,7 @@ function createFriendAgent(config) {
           language: sanitizeLanguage(input?.language),
           voiceStyle: String(input?.voiceStyle || 'cute').slice(0, 24),
           history: sanitizeHistory(input?.history),
+          allowedActions: [...ALLOWED_ACTIONS],
           product: 'screen-gremlin',
           clientVersion: String(input?.clientVersion || '').slice(0, 32),
         }),
