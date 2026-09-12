@@ -20,6 +20,11 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
 
-      - name: Build
+      - name: Check desktop runtime
+        run: npm run check:desktop
+
+      - name: Build frontend
         run: npm run build
