@@ -1,10 +1,10 @@
 {
   "name": "screen-gremlin",
   "productName": "ScreenGremlin",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
   "license": "UNLICENSED",
-  "description": "A mischievous desktop companion that wanders across your screen.",
+  "description": "A lightweight desktop companion with playful characters and local productivity tools.",
   "author": "ScreenGremlin",
   "type": "module",
   "main": "electron/main.cjs",
