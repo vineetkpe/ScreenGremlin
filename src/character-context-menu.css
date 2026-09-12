@@ -5,7 +5,9 @@
 .character-context-menu {
   position: fixed;
   z-index: 80;
-  width: 224px;
+  width: 236px;
+  max-height: calc(100vh - 20px);
+  overflow: auto;
   padding: 8px;
   border: 1px solid rgba(255,255,255,.11);
   border-radius: 14px;
@@ -26,7 +28,7 @@
 }
 
 .character-context-menu header strong {
-  max-width: 130px;
+  max-width: 112px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -37,7 +39,7 @@
   color: var(--gremlin-accent,#b2ff59);
   font-size: 8px;
   text-transform: uppercase;
-  letter-spacing: .08em;
+  letter-spacing: .06em;
 }
 
 .character-context-menu button {
@@ -48,7 +50,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
   color: #e6e6e2;
@@ -61,13 +63,24 @@
   background: rgba(255,255,255,.07);
 }
 
+.character-context-menu button.is-active {
+  border-color: color-mix(in srgb,var(--gremlin-accent,#b2ff59) 32%,transparent);
+  background: color-mix(in srgb,var(--gremlin-accent,#b2ff59) 7%,transparent);
+}
+
+.character-context-menu button.is-active span::before {
+  content: "•";
+  margin-right: 6px;
+  color: var(--gremlin-accent,#b2ff59);
+}
+
 .character-context-menu button span {
   font-size: 10px;
   font-weight: 750;
 }
 
 .character-context-menu button small {
-  max-width: 106px;
+  max-width: 112px;
   color: #777780;
   font-size: 8px;
   line-height: 1.25;
@@ -108,7 +121,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .character-sleeping-gremlin .gremlin-body {
-    animation: none;
-  }
+  .character-sleeping-gremlin .gremlin-body { animation: none; }
 }
