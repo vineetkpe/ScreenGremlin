@@ -3,10 +3,8 @@ name: CI
 on:
   push:
     branches:
-      - step-1-core-prototype
+      - 'step-*'
   pull_request:
-    branches:
-      - main
 
 jobs:
   build:
