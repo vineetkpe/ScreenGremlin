@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import CompanionEffects from './CompanionEffects'
-import DesktopCompanionV2 from './DesktopCompanionV2'
+import CharacterArtV3 from './CharacterArtV3'
+import DesktopCompanionV3 from './DesktopCompanionV3'
+import QuickBuddyPanel from './QuickBuddyPanel'
 import { useCompanionPrefs, writeCompanionPrefs, type DangleEdge, type MovementMode } from './companion-store'
+import { useCompanionV3Prefs, writeCompanionV3Prefs, type RopeLength } from './companion-v3-store'
 import { DEFAULT_SETTINGS, PERSONALITIES, isFocusActive, type GremlinSettings } from './gremlin'
 import useDesktopState from './useDesktopState'
 
@@ -13,12 +16,22 @@ function nearestEdge(x: number, y: number): DangleEdge {
   return edges[0][0]
 }
 
-function SleepingGremlin({ focusActive }: { focusActive: boolean }) {
+function nextRopeLength(current: RopeLength): RopeLength {
+  if (current === 'short') return 'medium'
+  if (current === 'medium') return 'long'
+  return 'short'
+}
+
+function SleepingCompanion({ focusActive }: { focusActive: boolean }) {
+  const state = useDesktopState()
+  const prefs = useCompanionPrefs()
+  const settings = state?.settings ?? DEFAULT_SETTINGS
+  const character = prefs.character === 'custom' && !state?.pro ? 'gremlin' : prefs.character
   return (
     <button
-      className="gremlin gremlin--nap character-sleeping-gremlin"
+      className="gremlin companion-character companion-v3 character-sleeping-gremlin"
       type="button"
-      aria-label={focusActive ? 'ScreenGremlin is in focus mode. Right-click for options.' : 'ScreenGremlin is paused. Right-click for options.'}
+      aria-label={focusActive ? 'Companion is in focus mode. Click to wake.' : 'Companion is paused. Click to wake.'}
       onPointerEnter={() => window.screenGremlin?.setInteractive(true)}
       onPointerLeave={() => window.screenGremlin?.setInteractive(false)}
       onClick={() => {
@@ -26,13 +39,16 @@ function SleepingGremlin({ focusActive }: { focusActive: boolean }) {
         else void window.screenGremlin?.updateSettings({ paused: false })
       }}
     >
-      <span className="speech-bubble">{focusActive ? 'focus mode.' : 'paused.'}</span>
-      <span className="ear ear--left" aria-hidden="true" />
-      <span className="ear ear--right" aria-hidden="true" />
-      <span className="gremlin-body" aria-hidden="true">
-        <span className="brow brow--left" /><span className="brow brow--right" />
-        <span className="eye eye--left" /><span className="eye eye--right" /><span className="mouth" /><span className="sleep-mark">z</span>
-      </span>
+      <span className="companion-speech v3-speech">{focusActive ? 'focus mode.' : 'zzz…'}</span>
+      <CharacterArtV3
+        character={character}
+        expression="sleepy"
+        accessory={settings.accessory}
+        customPrimary={prefs.customPrimary}
+        customSecondary={prefs.customSecondary}
+        customShape={prefs.customShape}
+        customEyes={prefs.customEyes}
+      />
     </button>
   )
 }
@@ -41,6 +57,7 @@ export default function DesktopOverlayShell() {
   const state = useDesktopState()
   const settings = state?.settings ?? DEFAULT_SETTINGS
   const prefs = useCompanionPrefs()
+  const v3 = useCompanionV3Prefs()
   const [menuPosition, setMenuPosition] = useState<MenuPosition>(null)
   const [now, setNow] = useState(Date.now())
   const focusActive = isFocusActive(settings, now)
@@ -60,8 +77,8 @@ export default function DesktopOverlayShell() {
     const openMenu = (event: MouseEvent) => {
       const target = event.target
       if (!(target instanceof Element)) return
-      if (target.closest('.character-context-menu')) return
-      if (!target.closest('.gremlin')) return
+      if (target.closest('.character-context-menu') || target.closest('.quick-buddy')) return
+      if (!target.closest('.companion-character')) return
       event.preventDefault()
       event.stopPropagation()
       window.screenGremlin?.setInteractive(true)
@@ -78,8 +95,8 @@ export default function DesktopOverlayShell() {
 
   const menuStyle = useMemo(() => {
     if (!menuPosition) return undefined
-    const width = 236
-    const height = 470
+    const width = 248
+    const height = 590
     return {
       left: Math.max(10, Math.min(menuPosition.x, window.innerWidth - width - 10)),
       top: Math.max(10, Math.min(menuPosition.y, window.innerHeight - height - 10)),
@@ -97,9 +114,20 @@ export default function DesktopOverlayShell() {
   }
 
   function movement(mode: MovementMode) {
-    if (mode === 'dangle') writeCompanionPrefs({ movementMode: mode, dangleEdge: nearestEdge(prefs.lastX, prefs.lastY) })
-    else writeCompanionPrefs({ movementMode: mode })
+    if (mode === 'dangle') {
+      writeCompanionPrefs({ movementMode: mode, dangleEdge: nearestEdge(prefs.lastX, prefs.lastY) })
+      writeCompanionV3Prefs({ ropeEnabled: true })
+    } else {
+      writeCompanionPrefs({ movementMode: mode })
+    }
     closeMenu()
+  }
+
+  function openQuick() {
+    const x = menuPosition?.x ?? window.innerWidth / 2
+    const y = menuPosition?.y ?? window.innerHeight / 2
+    closeMenu()
+    window.dispatchEvent(new CustomEvent('screen-gremlin:quick-open', { detail: { x, y } }))
   }
 
   function openDashboard() {
@@ -115,17 +143,24 @@ export default function DesktopOverlayShell() {
   return (
     <>
       <CompanionEffects />
-      {!asleep && <DesktopCompanionV2 />}
-      {asleep && <SleepingGremlin focusActive={focusActive} />}
+      {!asleep && <DesktopCompanionV3 />}
+      {asleep && <SleepingCompanion focusActive={focusActive} />}
+      <QuickBuddyPanel />
+
       {menuPosition && (
-        <aside className="character-context-menu" style={menuStyle} role="menu" aria-label="ScreenGremlin character menu" onPointerEnter={() => window.screenGremlin?.setInteractive(true)} onPointerLeave={() => closeMenu()} onContextMenu={(event) => event.preventDefault()}>
+        <aside className="character-context-menu" style={menuStyle} role="menu" aria-label="ScreenGremlin character menu" onPointerEnter={() => window.screenGremlin?.setInteractive(true)} onContextMenu={(event) => event.preventDefault()}>
           <header><strong>{settings.name}</strong><span>{PERSONALITIES[settings.personality].label} · {prefs.movementMode}</span></header>
-          <button type="button" role="menuitem" onClick={openDashboard}><span>Dashboard</span><small>Character, productivity & Pro</small></button>
-          <button type="button" role="menuitem" onClick={openDashboard}><span>Customize</span><small>Original characters & expressions</small></button>
+          <button type="button" role="menuitem" onClick={openQuick}><span>Quick actions</span><small>Note, todo, reminder, clipboard</small></button>
+          <button type="button" role="menuitem" onClick={openDashboard}><span>Customize</span><small>Character, personality & Pro</small></button>
           <div className="character-context-menu__separator" />
-          <button type="button" role="menuitem" className={prefs.movementMode === 'free' ? 'is-active' : ''} onClick={() => movement('free')}><span>Roam freely</span><small>Move around the desktop</small></button>
-          <button type="button" role="menuitem" className={prefs.movementMode === 'parked' ? 'is-active' : ''} onClick={() => movement('parked')}><span>Park here</span><small>Stay where I dragged you</small></button>
-          <button type="button" role="menuitem" className={prefs.movementMode === 'dangle' ? 'is-active' : ''} onClick={() => movement('dangle')}><span>Dangle / Hang</span><small>Snap to the nearest screen edge</small></button>
+          <button type="button" role="menuitem" className={prefs.movementMode === 'free' ? 'is-active' : ''} onClick={() => movement('free')}><span>Roam</span><small>Walk, perch and explore</small></button>
+          <button type="button" role="menuitem" className={prefs.movementMode === 'parked' ? 'is-active' : ''} onClick={() => movement('parked')}><span>Park exactly here</span><small>Stay at the precise drop point</small></button>
+          <button type="button" role="menuitem" className={prefs.movementMode === 'dangle' ? 'is-active' : ''} onClick={() => movement('dangle')}><span>Dangle with rope</span><small>Hang where you dragged me</small></button>
+          {prefs.movementMode === 'dangle' && <>
+            <button type="button" role="menuitem" onClick={() => { writeCompanionV3Prefs({ ropeEnabled: !v3.ropeEnabled }); closeMenu() }}><span>Rope</span><small>{v3.ropeEnabled ? 'Visible' : 'Hidden'}</small></button>
+            <button type="button" role="menuitem" onClick={() => { writeCompanionV3Prefs({ ropeLength: nextRopeLength(v3.ropeLength) }); closeMenu() }}><span>Rope length</span><small>{v3.ropeLength} · click to cycle</small></button>
+            <button type="button" role="menuitem" onClick={() => { writeCompanionV3Prefs({ ropeStyle: v3.ropeStyle === 'cord' ? 'chain' : 'cord' }); closeMenu() }}><span>Rope style</span><small>{v3.ropeStyle}</small></button>
+          </>}
           <div className="character-context-menu__separator" />
           <button type="button" role="menuitem" onClick={() => focusActive ? update({ focusUntil: null }) : update({ paused: !settings.paused })}><span>{focusActive ? 'End Focus' : settings.paused ? 'Resume' : 'Pause'}</span><small>{focusActive ? 'Wake the companion' : settings.paused ? 'Start moving again' : 'Stay quiet'}</small></button>
           {!focusActive && !settings.paused && <button type="button" role="menuitem" onClick={() => startFocus(30)}><span>Focus 30 min</span><small>Quiet while you work</small></button>}
