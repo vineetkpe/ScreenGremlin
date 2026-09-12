@@ -17,11 +17,11 @@
     "check:desktop": "node --check electron/main.cjs && node --check electron/preload.cjs && node --check electron/product-config.cjs",
     "check:license": "node --check scripts/generate-license.mjs",
     "check": "npm run check:desktop && npm run check:license && npm run build",
-    "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder",
-    "dist:win": "npm run build && electron-builder --win nsis",
-    "dist:mac": "npm run build && electron-builder --mac dmg zip",
-    "dist:linux": "npm run build && electron-builder --linux AppImage",
+    "pack": "npm run build && electron-builder --dir --publish never",
+    "dist": "npm run build && electron-builder --publish never",
+    "dist:win": "npm run build && electron-builder --win nsis --publish never",
+    "dist:mac": "npm run build && electron-builder --mac dmg zip --publish never",
+    "dist:linux": "npm run build && electron-builder --linux AppImage --publish never",
     "license:generate": "node scripts/generate-license.mjs"
   },
   "dependencies": {
