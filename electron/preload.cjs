@@ -21,8 +21,16 @@ contextBridge.exposeInMainWorld('screenGremlin', {
     return ipcRenderer.invoke('screen-gremlin:open-external', url)
   },
 
+  openSettings() {
+    return ipcRenderer.invoke('screen-gremlin:open-settings')
+  },
+
   closeSettings() {
     return ipcRenderer.invoke('screen-gremlin:close-settings')
+  },
+
+  quitApp() {
+    return ipcRenderer.invoke('screen-gremlin:quit')
   },
 
   setInteractive(interactive) {

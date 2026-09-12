@@ -1,5 +1,7 @@
 type ScreenGremlinIntensity = 'chill' | 'normal' | 'chaos'
 type ScreenGremlinTheme = 'lime' | 'pink' | 'ice' | 'purple'
+type ScreenGremlinPersonality = 'cute' | 'savage' | 'lazy' | 'chaotic' | 'gamer' | 'office'
+type ScreenGremlinAccessory = 'none' | 'cap' | 'glasses' | 'headphones' | 'crown'
 
 type ScreenGremlinSettings = {
   paused: boolean
@@ -10,6 +12,14 @@ type ScreenGremlinSettings = {
   startAtLogin: boolean
   allDisplays: boolean
   alwaysOnTop: boolean
+  name: string
+  personality: ScreenGremlinPersonality
+  accessory: ScreenGremlinAccessory
+  sounds: boolean
+  duo: boolean
+  rareAnimations: boolean
+  fullscreenSafe: boolean
+  focusUntil: number | null
 }
 
 type ScreenGremlinLicense = {
@@ -39,13 +49,13 @@ type ScreenGremlinActivationResult =
 interface Window {
   screenGremlin?: {
     getState(): Promise<ScreenGremlinState | null>
-    updateSettings(
-      patch: Partial<ScreenGremlinSettings>,
-    ): Promise<ScreenGremlinState | null>
+    updateSettings(patch: Partial<ScreenGremlinSettings>): Promise<ScreenGremlinState | null>
     activateLicense(key: string): Promise<ScreenGremlinActivationResult>
     deactivateLicense(): Promise<ScreenGremlinState | null>
     openExternal(url: string): Promise<boolean>
+    openSettings(): Promise<boolean>
     closeSettings(): Promise<boolean>
+    quitApp(): Promise<boolean>
     setInteractive(interactive: boolean): void
     onStateChanged(callback: (state: ScreenGremlinState) => void): () => void
   }

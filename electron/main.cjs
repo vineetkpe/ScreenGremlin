@@ -39,13 +39,27 @@ const DEFAULT_SETTINGS = {
   startAtLogin: false,
   allDisplays: true,
   alwaysOnTop: true,
+  name: 'Gremlin',
+  personality: 'cute',
+  accessory: 'none',
+  sounds: false,
+  duo: false,
+  rareAnimations: true,
+  fullscreenSafe: true,
+  focusUntil: null,
 }
 
 const THEMES = new Set(['lime', 'pink', 'ice', 'purple'])
 const INTENSITIES = new Set(['chill', 'normal', 'chaos'])
+const PERSONALITIES = new Set(['cute', 'savage', 'lazy', 'chaotic', 'gamer', 'office'])
+const ACCESSORIES = new Set(['none', 'cap', 'glasses', 'headphones', 'crown'])
+const FREE_PERSONALITIES = new Set(['cute', 'office'])
+const FREE_ACCESSORIES = new Set(['none', 'cap'])
 const MAX_LICENSE_KEY_LENGTH = 8192
 const MAX_LICENSE_PAYLOAD_BYTES = 4096
 const MAX_EXTERNAL_URL_LENGTH = 2048
+const MAX_GREMLIN_NAME_LENGTH = 24
+const MAX_FOCUS_MS = 24 * 60 * 60 * 1000
 const APP_ORIGIN = 'screengremlin://app'
 const SMOKE_TEST_ENABLED = !app.isPackaged && process.env.SCREEN_GREMLIN_SMOKE_TEST === '1'
 
@@ -173,20 +187,74 @@ function publicState() {
   }
 }
 
+function cleanName(value) {
+  const cleaned = String(value || '')
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .trim()
+    .slice(0, MAX_GREMLIN_NAME_LENGTH)
+  return cleaned || DEFAULT_SETTINGS.name
+}
+
+function sanitizeSettingsPatch(patch) {
+  const next = {}
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return next
+
+  if (typeof patch.paused === 'boolean') next.paused = patch.paused
+  if (typeof patch.speech === 'boolean') next.speech = patch.speech
+  if (typeof patch.notices === 'boolean') next.notices = patch.notices
+  if (typeof patch.startAtLogin === 'boolean') next.startAtLogin = patch.startAtLogin
+  if (typeof patch.allDisplays === 'boolean') next.allDisplays = patch.allDisplays
+  if (typeof patch.alwaysOnTop === 'boolean') next.alwaysOnTop = patch.alwaysOnTop
+  if (typeof patch.sounds === 'boolean') next.sounds = patch.sounds
+  if (typeof patch.rareAnimations === 'boolean') next.rareAnimations = patch.rareAnimations
+  if (typeof patch.fullscreenSafe === 'boolean') next.fullscreenSafe = patch.fullscreenSafe
+  if (typeof patch.duo === 'boolean') next.duo = isPro() ? patch.duo : false
+  if (typeof patch.name === 'string') next.name = cleanName(patch.name)
+
+  if (patch.focusUntil === null) {
+    next.focusUntil = null
+  } else if (typeof patch.focusUntil === 'number' && Number.isFinite(patch.focusUntil)) {
+    const now = Date.now()
+    next.focusUntil = patch.focusUntil <= now ? null : Math.min(patch.focusUntil, now + MAX_FOCUS_MS)
+  }
+
+  if (typeof patch.intensity === 'string' && INTENSITIES.has(patch.intensity)) {
+    next.intensity = patch.intensity === 'chaos' && !isPro() ? 'normal' : patch.intensity
+  }
+
+  if (typeof patch.theme === 'string' && THEMES.has(patch.theme)) {
+    next.theme = patch.theme !== 'lime' && !isPro() ? 'lime' : patch.theme
+  }
+
+  if (typeof patch.personality === 'string' && PERSONALITIES.has(patch.personality)) {
+    next.personality = !isPro() && !FREE_PERSONALITIES.has(patch.personality) ? 'cute' : patch.personality
+  }
+
+  if (typeof patch.accessory === 'string' && ACCESSORIES.has(patch.accessory)) {
+    next.accessory = !isPro() && !FREE_ACCESSORIES.has(patch.accessory) ? 'none' : patch.accessory
+  }
+
+  return next
+}
+
 function loadState() {
   try {
     const raw = fs.readFileSync(stateFilePath(), 'utf8')
     const parsed = JSON.parse(raw)
 
-    appState.settings = {
-      ...DEFAULT_SETTINGS,
-      ...(parsed.settings && typeof parsed.settings === 'object' ? parsed.settings : {}),
-    }
-    appState.settings = { ...DEFAULT_SETTINGS, ...sanitizeSettingsPatch(appState.settings) }
-    appState.licenseKey = typeof parsed.licenseKey === 'string' ? parsed.licenseKey.slice(0, MAX_LICENSE_KEY_LENGTH) : ''
-
+    appState.licenseKey = typeof parsed.licenseKey === 'string'
+      ? parsed.licenseKey.slice(0, MAX_LICENSE_KEY_LENGTH)
+      : ''
     const licenseResult = verifyLicenseKey(appState.licenseKey)
     appState.license = licenseResult.valid ? licenseResult.license : null
+
+    const persistedSettings = parsed.settings && typeof parsed.settings === 'object'
+      ? parsed.settings
+      : {}
+    appState.settings = {
+      ...DEFAULT_SETTINGS,
+      ...sanitizeSettingsPatch({ ...DEFAULT_SETTINGS, ...persistedSettings }),
+    }
   } catch {
     appState = {
       settings: { ...DEFAULT_SETTINGS },
@@ -208,28 +276,6 @@ function saveState() {
   } catch (error) {
     console.error('Failed to persist ScreenGremlin settings:', error)
   }
-}
-
-function sanitizeSettingsPatch(patch) {
-  const next = {}
-  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return next
-
-  if (typeof patch.paused === 'boolean') next.paused = patch.paused
-  if (typeof patch.speech === 'boolean') next.speech = patch.speech
-  if (typeof patch.notices === 'boolean') next.notices = patch.notices
-  if (typeof patch.startAtLogin === 'boolean') next.startAtLogin = patch.startAtLogin
-  if (typeof patch.allDisplays === 'boolean') next.allDisplays = patch.allDisplays
-  if (typeof patch.alwaysOnTop === 'boolean') next.alwaysOnTop = patch.alwaysOnTop
-
-  if (typeof patch.intensity === 'string' && INTENSITIES.has(patch.intensity)) {
-    next.intensity = patch.intensity === 'chaos' && !isPro() ? 'normal' : patch.intensity
-  }
-
-  if (typeof patch.theme === 'string' && THEMES.has(patch.theme)) {
-    next.theme = patch.theme !== 'lime' && !isPro() ? 'lime' : patch.theme
-  }
-
-  return next
 }
 
 function broadcastState() {
@@ -258,8 +304,12 @@ function applyWindowSettings() {
   for (const window of overlayWindows.values()) {
     if (window.isDestroyed()) continue
     window.setAlwaysOnTop(Boolean(appState.settings.alwaysOnTop), 'screen-saver')
-    if (appState.settings.paused) window.hide()
-    else window.showInactive()
+    try {
+      window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: !appState.settings.fullscreenSafe })
+    } catch {
+      // Some platforms ignore visibleOnFullScreen; Focus mode remains available everywhere.
+    }
+    if (!window.isVisible()) window.showInactive()
   }
 }
 
@@ -270,12 +320,10 @@ function registerAppProtocol() {
     try {
       const url = new URL(request.url)
       if (url.host !== 'app') return new Response('Not found', { status: 404 })
-
       const requestedPath = url.pathname === '/' ? '/index.html' : decodeURIComponent(url.pathname)
       const filePath = path.resolve(distRoot, `.${requestedPath}`)
       const relativePath = path.relative(distRoot, filePath)
       const unsafePath = relativePath.startsWith('..') || path.isAbsolute(relativePath)
-
       if (unsafePath) return new Response('Bad request', { status: 400 })
       return net.fetch(pathToFileURL(filePath).toString())
     } catch {
@@ -314,7 +362,6 @@ function attachSmokeTest(contents) {
       app.exit(1)
       return
     }
-
     smokeTestSettled = true
     setTimeout(() => app.exit(0), 100)
   })
@@ -361,12 +408,16 @@ function createOverlayForDisplay(display) {
       webSecurity: true,
       allowRunningInsecureContent: false,
       devTools: !app.isPackaged,
-      backgroundThrottling: false,
+      backgroundThrottling: true,
     },
   })
 
   window.setAlwaysOnTop(Boolean(appState.settings.alwaysOnTop), 'screen-saver')
-  window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  try {
+    window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: !appState.settings.fullscreenSafe })
+  } catch {
+    // Platform does not expose native fullscreen-space visibility controls.
+  }
 
   if (process.platform === 'linux') {
     window.setIgnoreMouseEvents(true)
@@ -375,9 +426,7 @@ function createOverlayForDisplay(display) {
   }
 
   renderApp(window, 'overlay')
-  window.once('ready-to-show', () => {
-    if (!appState.settings.paused) window.showInactive()
-  })
+  window.once('ready-to-show', () => window.showInactive())
   window.on('closed', () => overlayWindows.delete(String(display.id)))
   overlayWindows.set(String(display.id), window)
   return window
@@ -410,10 +459,10 @@ function createSettingsWindow() {
   }
 
   settingsWindow = new BrowserWindow({
-    width: 560,
-    height: 760,
-    minWidth: 480,
-    minHeight: 620,
+    width: 600,
+    height: 820,
+    minWidth: 500,
+    minHeight: 650,
     title: 'ScreenGremlin Settings',
     backgroundColor: '#111113',
     autoHideMenuBar: true,
@@ -446,10 +495,17 @@ function createSettingsWindow() {
   return settingsWindow
 }
 
+function togglePause() {
+  if (typeof appState.settings.focusUntil === 'number' && appState.settings.focusUntil > Date.now()) {
+    return updateSettings({ focusUntil: null, paused: false })
+  }
+  return updateSettings({ paused: !appState.settings.paused })
+}
+
 function buildTrayMenu() {
   if (!tray) return
   const menu = Menu.buildFromTemplate([
-    { label: appState.settings.paused ? 'Resume Gremlin' : 'Pause Gremlin', click: () => updateSettings({ paused: !appState.settings.paused }) },
+    { label: appState.settings.paused ? 'Resume Gremlin' : 'Pause Gremlin', click: () => togglePause() },
     { label: 'Settings…', click: () => createSettingsWindow() },
     { type: 'separator' },
     { label: 'Start at login', type: 'checkbox', checked: Boolean(appState.settings.startAtLogin), click: (item) => updateSettings({ startAtLogin: item.checked }) },
@@ -511,6 +567,7 @@ function registerIpc() {
     if (!result.valid) return result
     appState.licenseKey = String(key).trim()
     appState.license = result.license
+    appState.settings = { ...DEFAULT_SETTINGS, ...sanitizeSettingsPatch(appState.settings) }
     saveState()
     broadcastState()
     return { valid: true, state: publicState() }
@@ -522,6 +579,9 @@ function registerIpc() {
     appState.license = null
     if (appState.settings.intensity === 'chaos') appState.settings.intensity = 'normal'
     if (appState.settings.theme !== 'lime') appState.settings.theme = 'lime'
+    if (!FREE_PERSONALITIES.has(appState.settings.personality)) appState.settings.personality = 'cute'
+    if (!FREE_ACCESSORIES.has(appState.settings.accessory)) appState.settings.accessory = 'none'
+    appState.settings.duo = false
     saveState()
     broadcastState()
     return publicState()
@@ -531,7 +591,6 @@ function registerIpc() {
     if (!senderIsKnown(event)) return false
     const normalized = normalizeHttpsUrl(rawUrl)
     if (!normalized || !allowedExternalUrls().has(normalized)) return false
-
     try {
       await shell.openExternal(normalized)
       return true
@@ -540,9 +599,22 @@ function registerIpc() {
     }
   })
 
+  ipcMain.handle('screen-gremlin:open-settings', (event) => {
+    if (!senderIsKnown(event)) return false
+    createSettingsWindow()
+    return true
+  })
+
   ipcMain.handle('screen-gremlin:close-settings', (event) => {
     if (!senderIsKnown(event)) return false
     settingsWindow?.hide()
+    return true
+  })
+
+  ipcMain.handle('screen-gremlin:quit', (event) => {
+    if (!senderIsKnown(event)) return false
+    isQuitting = true
+    setImmediate(() => app.quit())
     return true
   })
 }
@@ -574,7 +646,7 @@ if (!app.requestSingleInstanceLock()) {
     registerIpc()
     syncOverlays()
     if (!SMOKE_TEST_ENABLED) createTray()
-    globalShortcut.register('CommandOrControl+Shift+G', () => updateSettings({ paused: !appState.settings.paused }))
+    globalShortcut.register('CommandOrControl+Shift+G', () => togglePause())
     screen.on('display-added', syncOverlays)
     screen.on('display-removed', syncOverlays)
     screen.on('display-metrics-changed', syncOverlays)

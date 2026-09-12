@@ -1,0 +1,94 @@
+.gremlin { touch-action: none; }
+.gremlin--actor-1 { filter: hue-rotate(38deg) drop-shadow(0 18px 20px rgba(0,0,0,.42)); }
+.gremlin--dragged { transition: filter 120ms ease; cursor: grabbing; }
+.gremlin--dragged .gremlin-body { transform: scale(1.06) rotate(-3deg); }
+.gremlin--thrown { transition: filter 120ms ease; }
+.gremlin--thrown .gremlin-body { animation: gremlin-thrown .32s linear infinite; }
+.gremlin--dance .gremlin-body { animation: gremlin-dance .32s ease-in-out infinite alternate; }
+.gremlin--spin .gremlin-body { animation: gremlin-spin .72s cubic-bezier(.5,.1,.5,.9); }
+.gremlin--trip .gremlin-body { animation: gremlin-trip .75s ease both; }
+.gremlin--toy .gremlin-body { animation: gremlin-toy-bounce .34s ease-in-out infinite alternate; }
+
+.gremlin-accessory { position: absolute; z-index: 6; pointer-events: none; }
+.gremlin-accessory--cap { left: 20px; top: -11px; width: 48px; height: 17px; border: 2px solid #161618; border-radius: 25px 25px 7px 7px; background: #202024; transform: rotate(-5deg); }
+.gremlin-accessory--cap::after { content: ""; position: absolute; right: -15px; bottom: -3px; width: 24px; height: 7px; border-radius: 999px; background: #202024; border-bottom: 2px solid #161618; }
+.gremlin-accessory--glasses { left: 15px; top: 24px; width: 58px; height: 20px; border-top: 3px solid #161618; }
+.gremlin-accessory--glasses::before, .gremlin-accessory--glasses::after { content: ""; position: absolute; top: -4px; width: 22px; height: 18px; border: 3px solid #161618; border-radius: 7px; background: rgba(121,230,255,.12); }
+.gremlin-accessory--glasses::before { left: 0; }
+.gremlin-accessory--glasses::after { right: 0; }
+.gremlin-accessory--headphones { left: 9px; top: 4px; width: 70px; height: 50px; border: 5px solid #202024; border-bottom: 0; border-radius: 38px 38px 0 0; }
+.gremlin-accessory--headphones::before, .gremlin-accessory--headphones::after { content: ""; position: absolute; top: 29px; width: 10px; height: 24px; border-radius: 8px; background: #202024; }
+.gremlin-accessory--headphones::before { left: -8px; }
+.gremlin-accessory--headphones::after { right: -8px; }
+.gremlin-accessory--crown { left: 23px; top: -17px; width: 43px; height: 27px; background: #ffd84d; clip-path: polygon(0 100%,0 34%,20% 62%,38% 0,58% 62%,82% 12%,100% 100%); filter: drop-shadow(0 1px 0 #7a5f00); }
+
+.gremlin-toy { position: absolute; z-index: 8; right: -14px; bottom: -7px; display: grid; place-items: center; pointer-events: none; }
+.gremlin-toy--ball { width: 29px; height: 29px; border: 2px solid #222; border-radius: 50%; background: radial-gradient(circle at 35% 30%,#fff 0 24%,#202024 25% 34%,#fff 35% 61%,#202024 62% 70%,#fff 71%); animation: toy-roll .55s linear infinite; }
+.gremlin-toy--snack { width: 27px; height: 27px; border: 2px solid #3a210d; border-radius: 7px; background: #d98b3a; color: #5b2f10; font-size: 12px; transform: rotate(12deg); }
+
+.gremlin-dock { position: fixed; z-index: 40; left: 18px; bottom: 18px; width: min(360px,calc(100vw - 36px)); pointer-events: auto; color: #ededE7; font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+.gremlin-dock__panel { margin-bottom: 8px; padding: 12px; border: 1px solid #34343a; border-radius: 14px; background: rgba(17,17,19,.96); box-shadow: 0 18px 50px rgba(0,0,0,.4); backdrop-filter: blur(12px); }
+.gremlin-dock__heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 2px 10px; }
+.gremlin-dock__heading strong { color: #f5f5ef; font-size: 12px; }
+.gremlin-dock__heading span { color: var(--gremlin-accent); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
+.gremlin-dock__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.gremlin-dock button { border: 1px solid #34343a; border-radius: 10px; background: #18181b; color: #d9d9d4; cursor: pointer; }
+.gremlin-dock button:hover { border-color: #52525b; background: #1e1e22; }
+.gremlin-dock button:disabled { opacity: .4; cursor: not-allowed; }
+.gremlin-dock__grid button { min-height: 38px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 10px; }
+.gremlin-dock__grid button b { color: var(--gremlin-accent); font-size: 9px; }
+.gremlin-dock__grid button.danger { color: #ff9f9f; }
+.gremlin-dock__panel p { margin: 10px 2px 0; color: #64646d; font-size: 8px; line-height: 1.5; }
+.gremlin-dock__bar { display: flex; width: fit-content; max-width: 100%; border: 1px solid #34343a; border-radius: 13px; overflow: hidden; background: rgba(17,17,19,.94); box-shadow: 0 12px 36px rgba(0,0,0,.35); }
+.gremlin-dock__pause { min-height: 40px; padding: 0 13px; border: 0 !important; border-radius: 0 !important; background: transparent !important; font-size: 10px; font-weight: 800; }
+.gremlin-dock__pause span { margin-right: 7px; color: var(--gremlin-accent); }
+.gremlin-dock__more { width: 44px; min-height: 40px; border: 0 !important; border-left: 1px solid #34343a !important; border-radius: 0 !important; background: transparent !important; letter-spacing: 1px; }
+.gremlin-dock.is-paused .gremlin-dock__bar { border-color: color-mix(in srgb,var(--gremlin-accent) 45%,#34343a); }
+
+.settings-intro { max-width: 480px; margin: 12px 0 0; color: #777780; font-size: 11px; line-height: 1.55; }
+.setting-row.is-disabled { opacity: .48; cursor: not-allowed; }
+.setting-badge { display: inline-block; margin-left: 7px; padding: 2px 5px; border-radius: 999px; background: rgba(178,255,89,.1); color: #b2ff59; font-size: 8px; font-style: normal; }
+.name-editor { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.name-editor input { min-width: 0; padding: 11px 12px; border: 1px solid #303036; border-radius: 10px; outline: none; background: #0e0e10; color: #ededE7; }
+.name-editor input:focus { border-color: rgba(178,255,89,.6); }
+.name-editor button, .personality-grid button, .accessory-grid button, .focus-actions button, .settings-footer--actions button { border: 1px solid #303036; border-radius: 10px; background: #111113; color: #d7d7db; cursor: pointer; }
+.name-editor button { padding: 0 14px; }
+.personality-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.personality-grid button { min-height: 82px; padding: 11px; text-align: left; }
+.personality-grid button strong, .personality-grid button small { display: block; }
+.personality-grid button strong { font-size: 11px; }
+.personality-grid button small { margin-top: 5px; color: #717179; font-size: 9px; line-height: 1.4; }
+.personality-grid button.active { border-color: rgba(178,255,89,.45); background: rgba(178,255,89,.08); }
+.personality-grid button:disabled, .accessory-grid button:disabled { opacity: .42; cursor: not-allowed; }
+.accessory-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 7px; margin-top: 10px; }
+.accessory-grid button { min-height: 62px; padding: 8px 4px; display: grid; place-items: center; gap: 4px; color: #8d8d95; font-size: 9px; }
+.accessory-grid button.active { border-color: rgba(178,255,89,.45); color: #e8ffd0; background: rgba(178,255,89,.07); }
+.accessory-preview { position: relative; display: block; width: 28px; height: 20px; }
+.accessory-preview::before { content: ""; position: absolute; inset: 6px 4px 0; border-radius: 50% 50% 40% 40%; background: #b2ff59; }
+.accessory-preview--cap::after { content: ""; position: absolute; left: 6px; top: 2px; width: 18px; height: 6px; border-radius: 8px 8px 2px 2px; background: #44444c; }
+.accessory-preview--glasses::after { content: "◉ ◉"; position: absolute; left: 4px; top: 7px; color: #1a1a1d; font-size: 7px; }
+.accessory-preview--headphones::after { content: "∩"; position: absolute; left: 5px; top: 0; color: #ddd; font-size: 19px; }
+.accessory-preview--crown::after { content: "♛"; position: absolute; left: 8px; top: -5px; color: #ffd84d; font-size: 15px; }
+.focus-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.focus-actions button { min-height: 42px; padding: 8px 10px; font-size: 10px; }
+.focus-actions .focus-active { grid-column: 1 / -1; border-color: rgba(178,255,89,.35); color: #dfffbc; }
+.settings-footer--actions { align-items: center; }
+.settings-footer--actions button { padding: 7px 9px; color: #9999a1; font-family: inherit; font-size: 9px; text-transform: uppercase; }
+
+@keyframes gremlin-dance { from{transform:translateY(0) rotate(-9deg) scaleY(.96)} to{transform:translateY(-10px) rotate(9deg) scaleY(1.04)} }
+@keyframes gremlin-spin { 0%{transform:rotate(0) scale(1)} 55%{transform:rotate(250deg) scale(.9)} 100%{transform:rotate(360deg) scale(1)} }
+@keyframes gremlin-trip { 0%{transform:rotate(0) translateY(0)} 40%{transform:rotate(28deg) translateY(5px)} 70%{transform:rotate(78deg) translateY(12px)} 100%{transform:rotate(0) translateY(0)} }
+@keyframes gremlin-thrown { from{transform:rotate(-10deg) scale(.98)} to{transform:rotate(10deg) scale(1.02)} }
+@keyframes gremlin-toy-bounce { from{transform:translateY(0)} to{transform:translateY(-7px)} }
+@keyframes toy-roll { to{transform:rotate(360deg)} }
+
+@media (max-width:620px) {
+  .personality-grid { grid-template-columns: 1fr; }
+  .accessory-grid { grid-template-columns: repeat(3,1fr); }
+  .focus-actions { grid-template-columns: 1fr; }
+  .gremlin-dock { left: 10px; bottom: 10px; width: min(340px,calc(100vw - 20px)); }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .gremlin--dance .gremlin-body,.gremlin--spin .gremlin-body,.gremlin--trip .gremlin-body,.gremlin--thrown .gremlin-body,.gremlin--toy .gremlin-body,.gremlin-toy--ball { animation: none; }
+}
