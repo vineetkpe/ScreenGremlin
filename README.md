@@ -1,38 +1,77 @@
 # ScreenGremlin
 
-ScreenGremlin is a small desktop companion designed to be understandable in seconds and easy to demo in short-form video.
+ScreenGremlin is a tiny desktop companion that wanders over your apps, hides at screen edges, talks back when you catch it, and stays out of the way when you work.
 
-## Build strategy
+## Product status
 
-We are shipping this in small verified steps rather than building the full product at once.
+This repository contains the full v1 MVP:
 
-### Step 1 — Core interaction prototype
-- React + TypeScript + Vite foundation
-- One on-screen Gremlin
-- Wandering movement
-- Click reactions
+- Transparent always-on-top desktop overlay
+- Click-through behavior on Windows and macOS
+- Multi-monitor support
+- Wander, peek, nap, taunt, zoom, and caught states
+- Tray menu with pause/resume, settings, startup, and quit controls
+- Global pause shortcut: `Ctrl/Cmd + Shift + G`
+- Persistent local settings
+- Free and Pro modes
+- Offline cryptographically signed Pro licenses
+- Windows, macOS, and Linux packaging
+- Landing page
+- GitHub Actions CI, packaging, release, and Pages workflows
+- No account system and no analytics SDK
 
-### Step 2 — Character behavior
-- Wander, peek, taunt, and caught states
-- Escalating poke reactions
-- Mischief notices and facial animation
+## Run the app locally
 
-### Step 3 — Desktop overlay
-- Electron desktop runtime
-- Transparent frameless overlay
-- Always-on-top Gremlin
-- Mouse passthrough outside the Gremlin on supported platforms
-- Safe preload bridge with context isolation
+Requirements: Node.js 22+.
 
-See `DESKTOP.md` for local desktop run instructions.
+```bash
+npm install
+npm run desktop
+```
 
-### Later steps
-1. Add tray controls and a clean quit/pause flow
-2. Add multi-monitor support and user settings
-3. Package and test installable builds
-4. Add a simple paid unlock only after the desktop experience is reliable
-5. Add landing page, checkout, analytics, and launch assets
+To preview all Pro controls in development:
 
-## Development
+```bash
+SCREEN_GREMLIN_DEV_PRO=1 npm run desktop
+```
 
-Each stage lives on its own feature branch and is verified before the next stage starts.
+On Windows PowerShell:
+
+```powershell
+$env:SCREEN_GREMLIN_DEV_PRO="1"
+npm run desktop
+```
+
+## Build installers
+
+```bash
+npm run dist:win
+npm run dist:mac
+npm run dist:linux
+```
+
+Build output is written to `release/`.
+
+## Configure sales
+
+Before selling Pro, edit `electron/product-config.cjs` and add your live checkout URL.
+
+The web landing page reads `VITE_CHECKOUT_URL`. For GitHub Pages, create a repository Actions variable named `VITE_CHECKOUT_URL`.
+
+License keys are signed offline. The public key is embedded in the app; the private key must never be committed to this repository.
+
+See [`docs/SELLING.md`](docs/SELLING.md) for license generation and launch steps.
+
+## Quality checks
+
+```bash
+npm run check
+```
+
+CI also performs an Electron Builder smoke package on Linux.
+
+## Privacy
+
+ScreenGremlin does not include analytics, telemetry, ad SDKs, or an account system. Settings and the Pro license are stored locally in the Electron user-data directory.
+
+See [`PRIVACY.md`](PRIVACY.md).
