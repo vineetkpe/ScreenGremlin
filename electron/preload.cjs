@@ -49,4 +49,10 @@ contextBridge.exposeInMainWorld('screenGremlin', {
     ipcRenderer.on('screen-gremlin:state-changed', listener)
     return () => ipcRenderer.removeListener('screen-gremlin:state-changed', listener)
   },
+
+  onFriendAction(callback) {
+    const listener = (_event, action) => callback(action)
+    ipcRenderer.on('screen-gremlin-v2:friend-action', listener)
+    return () => ipcRenderer.removeListener('screen-gremlin-v2:friend-action', listener)
+  },
 })
