@@ -133,14 +133,7 @@ function saveState() {
     fs.mkdirSync(path.dirname(stateFilePath()), { recursive: true })
     fs.writeFileSync(
       stateFilePath(),
-      JSON.stringify(
-        {
-          settings: appState.settings,
-          licenseKey: appState.licenseKey,
-        },
-        null,
-        2,
-      ),
+      JSON.stringify({ settings: appState.settings, licenseKey: appState.licenseKey }, null, 2),
       'utf8',
     )
   } catch (error) {
@@ -172,11 +165,9 @@ function sanitizeSettingsPatch(patch) {
 
 function broadcastState() {
   const state = publicState()
-
   for (const window of overlayWindows.values()) {
     if (!window.isDestroyed()) window.webContents.send('screen-gremlin:state-changed', state)
   }
-
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     settingsWindow.webContents.send('screen-gremlin:state-changed', state)
   }
@@ -184,7 +175,6 @@ function broadcastState() {
 
 function applyLoginSetting() {
   if (!app.isPackaged) return
-
   try {
     app.setLoginItemSettings({
       openAtLogin: Boolean(appState.settings.startAtLogin),
@@ -198,25 +188,18 @@ function applyLoginSetting() {
 function applyWindowSettings() {
   for (const window of overlayWindows.values()) {
     if (window.isDestroyed()) continue
-
     window.setAlwaysOnTop(Boolean(appState.settings.alwaysOnTop), 'screen-saver')
-    if (appState.settings.paused) {
-      window.hide()
-    } else {
-      window.showInactive()
-    }
+    if (appState.settings.paused) window.hide()
+    else window.showInactive()
   }
 }
 
 function renderFile(window, mode) {
-  return window.loadFile(path.join(__dirname, '..', 'dist', 'index.html'), {
-    query: { mode },
-  })
+  return window.loadFile(path.join(__dirname, '..', 'dist', 'index.html'), { query: { mode } })
 }
 
 function createOverlayForDisplay(display) {
   const { bounds } = display
-
   const window = new BrowserWindow({
     x: bounds.x,
     y: bounds.y,
@@ -248,20 +231,17 @@ function createOverlayForDisplay(display) {
   window.setAlwaysOnTop(Boolean(appState.settings.alwaysOnTop), 'screen-saver')
   window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
 
-  if (process.platform !== 'linux') {
+  if (process.platform === 'linux') {
+    window.setIgnoreMouseEvents(true)
+  } else {
     window.setIgnoreMouseEvents(true, { forward: true })
   }
 
   renderFile(window, 'overlay')
-
   window.once('ready-to-show', () => {
     if (!appState.settings.paused) window.showInactive()
   })
-
-  window.on('closed', () => {
-    overlayWindows.delete(String(display.id))
-  })
-
+  window.on('closed', () => overlayWindows.delete(String(display.id)))
   overlayWindows.set(String(display.id), window)
   return window
 }
@@ -279,14 +259,9 @@ function syncOverlays() {
 
   for (const [displayId, display] of wanted.entries()) {
     let window = overlayWindows.get(displayId)
-
-    if (!window || window.isDestroyed()) {
-      window = createOverlayForDisplay(display)
-    }
-
+    if (!window || window.isDestroyed()) window = createOverlayForDisplay(display)
     window.setBounds(display.bounds, false)
   }
-
   applyWindowSettings()
 }
 
@@ -316,61 +291,31 @@ function createSettingsWindow() {
   })
 
   renderFile(settingsWindow, 'settings')
-
   settingsWindow.once('ready-to-show', () => {
     settingsWindow?.show()
     settingsWindow?.focus()
   })
-
   settingsWindow.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault()
       settingsWindow.hide()
     }
   })
-
-  settingsWindow.on('closed', () => {
-    settingsWindow = null
-  })
-
+  settingsWindow.on('closed', () => { settingsWindow = null })
   return settingsWindow
 }
 
 function buildTrayMenu() {
   if (!tray) return
-
   const menu = Menu.buildFromTemplate([
-    {
-      label: appState.settings.paused ? 'Resume Gremlin' : 'Pause Gremlin',
-      click: () => updateSettings({ paused: !appState.settings.paused }),
-    },
-    {
-      label: 'Settings…',
-      click: () => createSettingsWindow(),
-    },
+    { label: appState.settings.paused ? 'Resume Gremlin' : 'Pause Gremlin', click: () => updateSettings({ paused: !appState.settings.paused }) },
+    { label: 'Settings…', click: () => createSettingsWindow() },
     { type: 'separator' },
-    {
-      label: 'Start at login',
-      type: 'checkbox',
-      checked: Boolean(appState.settings.startAtLogin),
-      click: (item) => updateSettings({ startAtLogin: item.checked }),
-    },
-    {
-      label: 'Show on all displays',
-      type: 'checkbox',
-      checked: Boolean(appState.settings.allDisplays),
-      click: (item) => updateSettings({ allDisplays: item.checked }),
-    },
+    { label: 'Start at login', type: 'checkbox', checked: Boolean(appState.settings.startAtLogin), click: (item) => updateSettings({ startAtLogin: item.checked }) },
+    { label: 'Show on all displays', type: 'checkbox', checked: Boolean(appState.settings.allDisplays), click: (item) => updateSettings({ allDisplays: item.checked }) },
     { type: 'separator' },
-    {
-      label: 'Quit ScreenGremlin',
-      click: () => {
-        isQuitting = true
-        app.quit()
-      },
-    },
+    { label: 'Quit ScreenGremlin', click: () => { isQuitting = true; app.quit() } },
   ])
-
   tray.setContextMenu(menu)
   tray.setToolTip(appState.settings.paused ? 'ScreenGremlin — paused' : 'ScreenGremlin')
 }
@@ -378,14 +323,12 @@ function buildTrayMenu() {
 function createTray() {
   const iconPath = path.join(__dirname, '..', 'build', 'icon.png')
   let icon = nativeImage.createFromPath(iconPath)
-
   if (process.platform === 'darwin') {
     icon = icon.resize({ width: 18, height: 18 })
     icon.setTemplateImage(true)
   } else {
     icon = icon.resize({ width: 22, height: 22 })
   }
-
   tray = new Tray(icon)
   tray.on('click', () => createSettingsWindow())
   buildTrayMenu()
@@ -394,15 +337,12 @@ function createTray() {
 function updateSettings(patch) {
   const sanitized = sanitizeSettingsPatch(patch)
   appState.settings = { ...appState.settings, ...sanitized }
-
   if ('startAtLogin' in sanitized) applyLoginSetting()
   if ('allDisplays' in sanitized) syncOverlays()
-
   saveState()
   applyWindowSettings()
   buildTrayMenu()
   broadcastState()
-
   return publicState()
 }
 
@@ -418,29 +358,18 @@ function registerIpc() {
     const window = BrowserWindow.fromWebContents(event.sender)
     if (!window || !Array.from(overlayWindows.values()).includes(window)) return
     if (process.platform === 'linux') return
-
     window.setIgnoreMouseEvents(!Boolean(interactive), { forward: true })
   })
 
-  ipcMain.handle('screen-gremlin:get-state', (event) => {
-    if (!senderIsKnown(event)) return null
-    return publicState()
-  })
-
-  ipcMain.handle('screen-gremlin:update-settings', (event, patch) => {
-    if (!senderIsKnown(event)) return null
-    return updateSettings(patch)
-  })
+  ipcMain.handle('screen-gremlin:get-state', (event) => senderIsKnown(event) ? publicState() : null)
+  ipcMain.handle('screen-gremlin:update-settings', (event, patch) => senderIsKnown(event) ? updateSettings(patch) : null)
 
   ipcMain.handle('screen-gremlin:activate-license', (event, key) => {
     if (!senderIsKnown(event)) return { valid: false, error: 'Unknown window.' }
-
     const result = verifyLicenseKey(key)
     if (!result.valid) return result
-
     appState.licenseKey = String(key).trim()
     appState.license = result.license
-
     saveState()
     broadcastState()
     return { valid: true, state: publicState() }
@@ -448,13 +377,10 @@ function registerIpc() {
 
   ipcMain.handle('screen-gremlin:deactivate-license', (event) => {
     if (!senderIsKnown(event)) return null
-
     appState.licenseKey = ''
     appState.license = null
-
     if (appState.settings.intensity === 'chaos') appState.settings.intensity = 'normal'
     if (appState.settings.theme !== 'lime') appState.settings.theme = 'lime'
-
     saveState()
     broadcastState()
     return publicState()
@@ -462,15 +388,12 @@ function registerIpc() {
 
   ipcMain.handle('screen-gremlin:open-external', async (event, rawUrl) => {
     if (!senderIsKnown(event)) return false
-
     try {
       const url = new URL(String(rawUrl || ''))
       if (url.protocol !== 'https:') return false
       await shell.openExternal(url.toString())
       return true
-    } catch {
-      return false
-    }
+    } catch { return false }
   })
 
   ipcMain.handle('screen-gremlin:close-settings', (event) => {
@@ -483,25 +406,17 @@ function registerIpc() {
 if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
-  app.on('second-instance', () => {
-    createSettingsWindow()
-  })
-
+  app.on('second-instance', () => createSettingsWindow())
   app.whenReady().then(() => {
     loadState()
     applyLoginSetting()
     registerIpc()
     syncOverlays()
     createTray()
-
-    globalShortcut.register('CommandOrControl+Shift+G', () => {
-      updateSettings({ paused: !appState.settings.paused })
-    })
-
+    globalShortcut.register('CommandOrControl+Shift+G', () => updateSettings({ paused: !appState.settings.paused }))
     screen.on('display-added', syncOverlays)
     screen.on('display-removed', syncOverlays)
     screen.on('display-metrics-changed', syncOverlays)
-
     app.on('activate', () => {
       if (overlayWindows.size === 0) syncOverlays()
       createSettingsWindow()
@@ -509,14 +424,8 @@ if (!app.requestSingleInstanceLock()) {
   })
 }
 
-app.on('before-quit', () => {
-  isQuitting = true
-})
-
-app.on('will-quit', () => {
-  globalShortcut.unregisterAll()
-})
-
+app.on('before-quit', () => { isQuitting = true })
+app.on('will-quit', () => globalShortcut.unregisterAll())
 app.on('window-all-closed', () => {
-  // This is a tray app. It stays alive until the user chooses Quit.
+  // Tray app: remain running until Quit is selected.
 })
