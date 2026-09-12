@@ -12,6 +12,7 @@ import './companion-effects.css'
 import './character-context-menu.css'
 import './dashboard-v2.css'
 import './friend-bubble.css'
+import './friend-play.css'
 import './desktop.css'
 
 const mode = new URLSearchParams(window.location.search).get('mode')
