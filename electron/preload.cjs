@@ -29,6 +29,13 @@ contextBridge.exposeInMainWorld('screenGremlin', {
     return ipcRenderer.invoke('screen-gremlin:close-settings')
   },
 
+  openFriend(anchor) {
+    return ipcRenderer.invoke('screen-gremlin-v2:open-friend', {
+      x: Number(anchor?.x) || 0,
+      y: Number(anchor?.y) || 0,
+    })
+  },
+
   quitApp() {
     return ipcRenderer.invoke('screen-gremlin:quit')
   },
