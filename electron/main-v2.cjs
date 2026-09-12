@@ -1,5 +1,7 @@
 const path = require('node:path')
 const { app, BrowserWindow, ipcMain, screen } = require('electron')
+const product = require('./product-config.cjs')
+const { createFriendAgent } = require('./friend-agent.cjs')
 
 // Keep the hardened v1 main process intact and layer the v2 friend window on top.
 require('./main.cjs')
@@ -7,6 +9,7 @@ require('./main.cjs')
 const APP_ORIGIN = 'screengremlin://app'
 const FRIEND_WIDTH = 410
 const FRIEND_HEIGHT = 560
+const friendAgent = createFriendAgent(product)
 let friendWindow = null
 
 function isTrustedRenderer(event) {
@@ -104,6 +107,21 @@ ipcMain.handle('screen-gremlin-v2:close-friend', (event) => {
   if (BrowserWindow.fromWebContents(event.sender) !== friendWindow) return false
   friendWindow.hide()
   return true
+})
+
+ipcMain.handle('screen-gremlin-v2:friend-chat', async (event, input) => {
+  if (!friendWindow || friendWindow.isDestroyed()) return { ok: false, reason: 'friend-window-missing' }
+  if (BrowserWindow.fromWebContents(event.sender) !== friendWindow) return { ok: false, reason: 'unknown-window' }
+  return friendAgent.chat({
+    ...input,
+    clientVersion: app.getVersion(),
+  })
+})
+
+ipcMain.handle('screen-gremlin-v2:friend-agent-status', (event) => {
+  if (!friendWindow || friendWindow.isDestroyed()) return { configured: false }
+  if (BrowserWindow.fromWebContents(event.sender) !== friendWindow) return { configured: false }
+  return { configured: friendAgent.configured }
 })
 
 app.on('before-quit', () => {
