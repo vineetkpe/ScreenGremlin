@@ -47,6 +47,20 @@ button {
   background-size: 32px 32px;
 }
 
+.screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(178, 255, 89, 0.08), transparent 45%);
+}
+
+.screen--taunt::after {
+  animation: screen-pulse 900ms ease;
+}
+
 .brand,
 .status-bar {
   position: absolute;
@@ -110,7 +124,7 @@ button {
 }
 
 .intro-copy {
-  max-width: 460px;
+  max-width: 480px;
   margin: 24px 0 0;
   font-size: clamp(16px, 1.7vw, 20px);
   line-height: 1.55;
@@ -120,6 +134,36 @@ button {
 .hint {
   margin-top: 34px;
   color: #777780;
+}
+
+.gremlin-notice {
+  position: absolute;
+  z-index: 7;
+  top: 72px;
+  right: 28px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: min(340px, calc(100vw - 56px));
+  padding: 11px 14px;
+  border: 1px solid #303035;
+  border-radius: 11px;
+  background: rgba(18, 18, 20, 0.94);
+  color: #deded8;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  animation: notice-in 220ms ease-out;
+}
+
+.gremlin-notice__dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #b2ff59;
+  box-shadow: 0 0 10px rgba(178, 255, 89, 0.6);
 }
 
 .gremlin {
@@ -133,8 +177,8 @@ button {
   cursor: pointer;
   transform: translate(-50%, -50%);
   transition:
-    left 1.15s cubic-bezier(0.2, 0.8, 0.2, 1),
-    top 1.15s cubic-bezier(0.2, 0.8, 0.2, 1),
+    left 1.05s cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 1.05s cubic-bezier(0.2, 0.8, 0.2, 1),
     filter 180ms ease;
   filter: drop-shadow(0 18px 20px rgba(0, 0, 0, 0.45));
 }
@@ -158,6 +202,7 @@ button {
   box-shadow:
     inset -10px -10px 0 rgba(41, 65, 16, 0.12),
     inset 8px 8px 0 rgba(255, 255, 255, 0.12);
+  transform-origin: 50% 80%;
 }
 
 .ear {
@@ -183,11 +228,12 @@ button {
 
 .eye {
   position: absolute;
-  top: 26px;
+  top: 27px;
   width: 13px;
   height: 17px;
   border-radius: 50%;
   background: #111113;
+  transition: height 140ms ease, top 140ms ease;
 }
 
 .eye::after {
@@ -209,6 +255,26 @@ button {
   right: 22px;
 }
 
+.brow {
+  position: absolute;
+  z-index: 2;
+  top: 21px;
+  width: 17px;
+  height: 3px;
+  border-radius: 999px;
+  background: #111113;
+  opacity: 0;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.brow--left {
+  left: 20px;
+}
+
+.brow--right {
+  right: 20px;
+}
+
 .mouth {
   position: absolute;
   left: 50%;
@@ -225,7 +291,7 @@ button {
   left: 50%;
   bottom: calc(100% + 8px);
   width: max-content;
-  max-width: 190px;
+  max-width: 210px;
   padding: 9px 12px;
   border: 1px solid #303035;
   border-radius: 10px;
@@ -235,19 +301,73 @@ button {
   font-size: 11px;
   line-height: 1.35;
   text-align: center;
+  opacity: 0.76;
   transform: translateX(-50%);
+  transition: opacity 160ms ease, transform 160ms ease;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
-.gremlin--reacting .gremlin-body {
+.gremlin--wander .gremlin-body {
+  animation: gremlin-scuttle 520ms ease-in-out infinite alternate;
+}
+
+.gremlin--peek {
+  transition:
+    left 750ms cubic-bezier(0.3, 0.9, 0.2, 1),
+    top 750ms cubic-bezier(0.3, 0.9, 0.2, 1),
+    filter 180ms ease;
+}
+
+.gremlin--peek .gremlin-body {
+  animation: gremlin-peek 700ms ease-in-out infinite alternate;
+}
+
+.gremlin--peek .speech-bubble,
+.gremlin--taunt .speech-bubble,
+.gremlin--caught .speech-bubble {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.gremlin--taunt .brow,
+.gremlin--caught .brow {
+  opacity: 1;
+}
+
+.gremlin--taunt .brow--left {
+  transform: rotate(9deg);
+}
+
+.gremlin--taunt .brow--right {
+  transform: rotate(-9deg);
+}
+
+.gremlin--taunt .gremlin-body {
+  animation: gremlin-taunt 480ms ease-in-out infinite alternate;
+}
+
+.gremlin--caught .gremlin-body {
   animation: gremlin-shake 0.42s ease;
 }
 
-.gremlin--reacting .mouth {
+.gremlin--caught .brow--left {
+  transform: rotate(-14deg);
+}
+
+.gremlin--caught .brow--right {
+  transform: rotate(14deg);
+}
+
+.gremlin--caught .mouth {
   width: 20px;
   height: 12px;
   border: 3px solid #111113;
   border-radius: 50%;
+}
+
+.gremlin--caught .eye {
+  top: 29px;
+  height: 13px;
 }
 
 .status-bar {
@@ -259,6 +379,31 @@ button {
   0%, 100% { transform: rotate(0deg) scale(1); }
   25% { transform: rotate(-7deg) scale(1.08); }
   60% { transform: rotate(8deg) scale(0.96); }
+}
+
+@keyframes gremlin-scuttle {
+  from { transform: rotate(-2deg) translateY(0); }
+  to { transform: rotate(2deg) translateY(-5px); }
+}
+
+@keyframes gremlin-peek {
+  from { transform: rotate(-4deg) scale(0.98); }
+  to { transform: rotate(4deg) scale(1.03); }
+}
+
+@keyframes gremlin-taunt {
+  from { transform: translateY(0) rotate(-1deg); }
+  to { transform: translateY(-7px) rotate(1deg); }
+}
+
+@keyframes notice-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes screen-pulse {
+  0%, 100% { opacity: 0; }
+  45% { opacity: 1; }
 }
 
 @media (max-width: 700px) {
@@ -276,6 +421,11 @@ button {
     right: 18px;
   }
 
+  .gremlin-notice {
+    top: 62px;
+    right: 18px;
+  }
+
   .gremlin {
     width: 92px;
     height: 90px;
@@ -283,11 +433,16 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gremlin {
-    transition: none;
+  .screen--taunt::after,
+  .gremlin-notice,
+  .gremlin--wander .gremlin-body,
+  .gremlin--peek .gremlin-body,
+  .gremlin--taunt .gremlin-body,
+  .gremlin--caught .gremlin-body {
+    animation: none;
   }
 
-  .gremlin--reacting .gremlin-body {
-    animation: none;
+  .gremlin {
+    transition: none;
   }
 }
