@@ -10,4 +10,7 @@ contextBridge.exposeInMainWorld('screenGremlinFriend', {
   getAgentStatus() {
     return ipcRenderer.invoke('screen-gremlin-v2:friend-agent-status')
   },
+  triggerAction(action, language) {
+    return ipcRenderer.invoke('screen-gremlin-v2:friend-action', { action, language })
+  },
 })
