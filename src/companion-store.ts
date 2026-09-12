@@ -35,8 +35,8 @@ const DATA_KEY = 'screen-gremlin:productivity:v1'
 const STORE_EVENT = 'screen-gremlin:local-store'
 
 export const CHARACTER_LIBRARY: Array<{ id: CharacterId; name: string; description: string; pro: boolean }> = [
-  { id: 'gremlin', name: 'Gremlin', description: 'The original tiny desktop menace.', pro: false },
-  { id: 'pebblebot', name: 'Pebblebot', description: 'A compact helper bot with serious eyebrows.', pro: false },
+  { id: 'gremlin', name: 'Mimi', description: 'A warm, playful original desktop friend with expressive reactions.', pro: false },
+  { id: 'pebblebot', name: 'Rex', description: 'A confident, laid-back original desktop buddy with sharper styling.', pro: false },
   { id: 'mossling', name: 'Mossling', description: 'A small leafy creature with its own original silhouette.', pro: true },
   { id: 'bloop', name: 'Bloop', description: 'A soft blob that treats gravity as optional.', pro: true },
   { id: 'nimbus', name: 'Nimbus', description: 'A tiny storm-cloud companion.', pro: true },
@@ -47,7 +47,7 @@ export const CHARACTER_LIBRARY: Array<{ id: CharacterId; name: string; descripti
 ]
 
 export const EXPRESSIONS = [
-  'neutral', 'happy', 'laugh', 'annoyed', 'angry', 'sleepy', 'shocked', 'scared', 'confused', 'curious',
+  'neutral', 'happy', 'laugh', 'teasing', 'smug', 'annoyed', 'angry', 'sleepy', 'shocked', 'scared', 'confused', 'curious',
   'proud', 'excited', 'bored', 'sneaky', 'dizzy', 'sad', 'thinking', 'hungry', 'celebrate', 'dance',
   'facepalm', 'embarrassed', 'focused', 'mischief', 'love', 'determined',
 ] as const
