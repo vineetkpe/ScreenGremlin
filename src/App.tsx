@@ -52,6 +52,7 @@ function randomItem<T>(items: T[]): T {
 }
 
 export default function App() {
+  const isDesktopOverlay = Boolean(window.screenGremlin)
   const [position, setPosition] = useState<Position>({ x: 70, y: 58 })
   const [behavior, setBehavior] = useState<Behavior>('idle')
   const [reactionIndex, setReactionIndex] = useState(0)
@@ -112,11 +113,17 @@ export default function App() {
     return () => {
       window.clearInterval(timer)
       clearBehaviorTimeout()
+      window.screenGremlin?.setInteractive(false)
+
       if (noticeTimeout.current !== null) {
         window.clearTimeout(noticeTimeout.current)
       }
     }
   }, [])
+
+  function setOverlayInteractive(interactive: boolean) {
+    window.screenGremlin?.setInteractive(interactive)
+  }
 
   function pokeGremlin() {
     const nextReactionIndex = reactionIndex + 1
@@ -127,6 +134,7 @@ export default function App() {
     setBehavior('caught')
     setSpeech(reactions[nextReactionIndex % reactions.length])
     setPosition(randomPosition())
+    setOverlayInteractive(false)
 
     if (behaviorTimeout.current !== null) {
       window.clearTimeout(behaviorTimeout.current)
@@ -146,11 +154,14 @@ export default function App() {
   }
 
   return (
-    <main className={`screen screen--${behavior}`} aria-label="ScreenGremlin prototype">
+    <main
+      className={`screen screen--${behavior} ${isDesktopOverlay ? 'screen--desktop' : ''}`}
+      aria-label="ScreenGremlin prototype"
+    >
       <header className="brand">
         <span className="brand-dot" aria-hidden="true" />
         <span>ScreenGremlin</span>
-        <span className="prototype-tag">prototype 02</span>
+        <span className="prototype-tag">prototype 03</span>
       </header>
 
       <section className="intro">
@@ -172,6 +183,8 @@ export default function App() {
       <button
         className={`gremlin gremlin--${behavior}`}
         style={{ left: `${position.x}%`, top: `${position.y}%` }}
+        onMouseEnter={() => setOverlayInteractive(true)}
+        onMouseLeave={() => setOverlayInteractive(false)}
         onClick={pokeGremlin}
         aria-label={`Poke the ScreenGremlin. Poked ${pokeCount} times.`}
         type="button"
