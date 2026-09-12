@@ -117,7 +117,7 @@ export default function DesktopOverlayShell() {
 
   return (
     <>
-      <DesktopCompanionV2 />
+      {!asleep && <DesktopCompanionV2 />}
       {asleep && <SleepingGremlin focusActive={focusActive} />}
 
       {menuPosition && (
@@ -130,31 +130,18 @@ export default function DesktopOverlayShell() {
           onPointerLeave={() => closeMenu()}
           onContextMenu={(event) => event.preventDefault()}
         >
-          <header>
-            <strong>{settings.name}</strong>
-            <span>{PERSONALITIES[settings.personality].label} · {prefs.movementMode}</span>
-          </header>
-
+          <header><strong>{settings.name}</strong><span>{PERSONALITIES[settings.personality].label} · {prefs.movementMode}</span></header>
           <button type="button" role="menuitem" onClick={openDashboard}><span>Dashboard</span><small>Character, productivity & Pro</small></button>
           <button type="button" role="menuitem" onClick={openDashboard}><span>Customize</span><small>Original characters & expressions</small></button>
-
           <div className="character-context-menu__separator" />
-
           <button type="button" role="menuitem" className={prefs.movementMode === 'free' ? 'is-active' : ''} onClick={() => movement('free')}><span>Roam freely</span><small>Move around the desktop</small></button>
           <button type="button" role="menuitem" className={prefs.movementMode === 'parked' ? 'is-active' : ''} onClick={() => movement('parked')}><span>Park here</span><small>Stay where I dragged you</small></button>
           <button type="button" role="menuitem" className={prefs.movementMode === 'dangle' ? 'is-active' : ''} onClick={() => movement('dangle')}><span>Dangle / Hang</span><small>Snap to the nearest screen edge</small></button>
-
           <div className="character-context-menu__separator" />
-
-          <button type="button" role="menuitem" onClick={() => focusActive ? update({ focusUntil: null }) : update({ paused: !settings.paused })}>
-            <span>{focusActive ? 'End Focus' : settings.paused ? 'Resume' : 'Pause'}</span>
-            <small>{focusActive ? 'Wake the companion' : settings.paused ? 'Start moving again' : 'Stay quiet'}</small>
-          </button>
+          <button type="button" role="menuitem" onClick={() => focusActive ? update({ focusUntil: null }) : update({ paused: !settings.paused })}><span>{focusActive ? 'End Focus' : settings.paused ? 'Resume' : 'Pause'}</span><small>{focusActive ? 'Wake the companion' : settings.paused ? 'Start moving again' : 'Stay quiet'}</small></button>
           {!focusActive && !settings.paused && <button type="button" role="menuitem" onClick={() => startFocus(30)}><span>Focus 30 min</span><small>Quiet while you work</small></button>}
           <button type="button" role="menuitem" onClick={() => update({ sounds: !settings.sounds })}><span>Sounds</span><small>{settings.sounds ? 'On' : 'Off'}</small></button>
-
           <div className="character-context-menu__separator" />
-
           <button type="button" role="menuitem" className="character-context-menu__danger" onClick={() => { closeMenu(); void window.screenGremlin?.quitApp() }}><span>Quit ScreenGremlin</span><small>Close completely</small></button>
         </aside>
       )}
