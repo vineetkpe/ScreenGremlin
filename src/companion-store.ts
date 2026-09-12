@@ -47,7 +47,7 @@ export const CHARACTER_LIBRARY: Array<{ id: CharacterId; name: string; descripti
 ]
 
 export const EXPRESSIONS = [
-  'neutral', 'happy', 'laugh', 'teasing', 'smug', 'annoyed', 'angry', 'sleepy', 'shocked', 'scared', 'confused', 'curious',
+  'neutral', 'happy', 'laugh', 'annoyed', 'angry', 'sleepy', 'shocked', 'scared', 'confused', 'curious',
   'proud', 'excited', 'bored', 'sneaky', 'dizzy', 'sad', 'thinking', 'hungry', 'celebrate', 'dance',
   'facepalm', 'embarrassed', 'focused', 'mischief', 'love', 'determined',
 ] as const
