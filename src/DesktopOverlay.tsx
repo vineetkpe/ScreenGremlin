@@ -110,6 +110,7 @@ function GremlinActor({
   const [pokeCount, setPokeCount] = useState(0)
   const [toy, setToy] = useState<Toy | null>(null)
   const dragging = useRef(false)
+  const dragDistance = useRef(0)
   const lastPointer = useRef({ x: 0, y: 0, time: 0 })
   const velocity = useRef({ x: 0, y: 0 })
   const behaviorTimeout = useRef<number | null>(null)
@@ -220,7 +221,6 @@ function GremlinActor({
   }, [])
 
   function pokeGremlin() {
-    if (dragging.current) return
     const nextPokes = pokeCount + 1
     setPokeCount(nextPokes)
     setBehavior('caught')
@@ -242,6 +242,7 @@ function GremlinActor({
     if (event.button !== 0) return
     if (throwFrame.current !== null) window.cancelAnimationFrame(throwFrame.current)
     dragging.current = true
+    dragDistance.current = 0
     event.currentTarget.setPointerCapture(event.pointerId)
     lastPointer.current = { x: event.clientX, y: event.clientY, time: performance.now() }
     velocity.current = { x: 0, y: 0 }
@@ -254,10 +255,10 @@ function GremlinActor({
     if (!dragging.current) return
     const now = performance.now()
     const elapsed = Math.max(8, now - lastPointer.current.time)
-    velocity.current = {
-      x: (event.clientX - lastPointer.current.x) / elapsed,
-      y: (event.clientY - lastPointer.current.y) / elapsed,
-    }
+    const dx = event.clientX - lastPointer.current.x
+    const dy = event.clientY - lastPointer.current.y
+    dragDistance.current += Math.hypot(dx, dy)
+    velocity.current = { x: dx / elapsed, y: dy / elapsed }
     lastPointer.current = { x: event.clientX, y: event.clientY, time: now }
     setPosition(pointerPosition(event))
   }
@@ -270,8 +271,17 @@ function GremlinActor({
     let vx = velocity.current.x
     let vy = velocity.current.y
     const speed = Math.hypot(vx, vy)
+    const wasClick = dragDistance.current < 6
+
+    if (wasClick) {
+      pokeGremlin()
+      window.setTimeout(() => window.screenGremlin?.setInteractive(false), 80)
+      return
+    }
+
     if (speed < 0.08) {
       setBehavior('caught')
+      setSpeech('okay. dramatic relocation.')
       window.setTimeout(() => setBehavior('idle'), 500)
       window.setTimeout(() => window.screenGremlin?.setInteractive(false), 80)
       return
@@ -324,7 +334,6 @@ function GremlinActor({
       onPointerMove={moveDrag}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
-      onClick={pokeGremlin}
       aria-label={`${settings.name}${index ? ' two' : ''}. Drag, throw, or poke.`}
       type="button"
     >
