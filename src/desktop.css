@@ -1,0 +1,29 @@
+html:has(.screen--desktop),
+html:has(.screen--desktop) body,
+html:has(.screen--desktop) #root {
+  background: transparent !important;
+}
+
+.screen--desktop {
+  min-height: 100vh;
+  background: transparent;
+}
+
+.screen--desktop::before,
+.screen--desktop::after,
+.screen--desktop .brand,
+.screen--desktop .intro,
+.screen--desktop .status-bar {
+  display: none;
+}
+
+.screen--desktop .gremlin {
+  filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.4));
+}
+
+.screen--desktop .gremlin-notice {
+  top: 24px;
+  right: 24px;
+  background: rgba(18, 18, 20, 0.9);
+  backdrop-filter: blur(8px);
+}
