@@ -43,7 +43,7 @@
     "asar": true,
     "directories": {
       "output": "release",
-      "buildResources": "build"
+      "buildResources": "resources"
     },
     "files": [
       "dist/**/*",
