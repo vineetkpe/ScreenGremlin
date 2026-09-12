@@ -17,6 +17,7 @@
     "check:desktop": "node --check electron/main.cjs && node --check electron/preload.cjs && node --check electron/product-config.cjs",
     "check:license": "node --check scripts/generate-license.mjs",
     "check": "npm run check:desktop && npm run check:license && npm run build",
+    "audit": "npm audit --audit-level=high",
     "pack": "npm run build && electron-builder --dir --publish never",
     "dist": "npm run build && electron-builder --publish never",
     "dist:win": "npm run build && electron-builder --win nsis --publish never",
@@ -25,22 +26,32 @@
     "license:generate": "node scripts/generate-license.mjs"
   },
   "dependencies": {
-    "react": "latest",
-    "react-dom": "latest"
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "@vitejs/plugin-react": "latest",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
     "electron": "44.3.0",
-    "electron-builder": "latest",
-    "typescript": "latest",
-    "vite": "latest"
+    "electron-builder": "26.15.3",
+    "typescript": "7.0.2",
+    "vite": "8.3.0"
   },
   "build": {
     "appId": "fun.mirco.screengremlin",
     "productName": "ScreenGremlin",
     "asar": true,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "loadBrowserProcessSpecificV8Snapshot": false,
+      "grantFileProtocolExtraPrivileges": false
+    },
     "directories": {
       "output": "release",
       "buildResources": "resources"
