@@ -29,6 +29,13 @@ contextBridge.exposeInMainWorld('screenGremlin', {
     return ipcRenderer.invoke('screen-gremlin:close-settings')
   },
 
+  openFriend(anchor) {
+    return ipcRenderer.invoke('screen-gremlin-v2:open-friend', {
+      x: Number(anchor?.x) || 0,
+      y: Number(anchor?.y) || 0,
+    })
+  },
+
   quitApp() {
     return ipcRenderer.invoke('screen-gremlin:quit')
   },
@@ -41,5 +48,11 @@ contextBridge.exposeInMainWorld('screenGremlin', {
     const listener = (_event, state) => callback(state)
     ipcRenderer.on('screen-gremlin:state-changed', listener)
     return () => ipcRenderer.removeListener('screen-gremlin:state-changed', listener)
+  },
+
+  onFriendAction(callback) {
+    const listener = (_event, action) => callback(action)
+    ipcRenderer.on('screen-gremlin-v2:friend-action', listener)
+    return () => ipcRenderer.removeListener('screen-gremlin-v2:friend-action', listener)
   },
 })

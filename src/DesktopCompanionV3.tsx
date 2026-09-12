@@ -22,6 +22,9 @@ import useDesktopState from './useDesktopState'
 
 type DuoAction = 'chase' | 'spar' | 'highfive' | 'dance' | 'steal' | 'race' | 'nap' | 'stare'
 type DuoEvent = { id: number; action: DuoAction } | null
+type FriendActionName = 'play' | 'pat' | 'bonk' | 'quiet'
+type FriendLanguage = 'en' | 'hi' | 'hinglish'
+type FriendActionEvent = { id: number; action: FriendActionName; language: FriendLanguage } | null
 
 const DUO_ACTIONS: DuoAction[] = ['chase', 'spar', 'highfive', 'dance', 'steal', 'race', 'nap', 'stare']
 
@@ -57,6 +60,36 @@ function naturalTarget(): { position: Position; action: string; expression: Expr
   return { position: { x: 14 + Math.random() * 72, y: 20 + Math.random() * 52 }, action: 'hop', expression: randomItem([...EXPRESSIONS]) }
 }
 
+function chaseTarget(): Position {
+  const zones: Position[] = [
+    { x: 12, y: 82 }, { x: 88, y: 80 }, { x: 16, y: 28 }, { x: 84, y: 30 },
+    { x: 50, y: 16 }, { x: 48, y: 74 },
+  ]
+  const zone = randomItem(zones)
+  return { x: clamp(zone.x + (Math.random() * 8 - 4), 7, 93), y: clamp(zone.y + (Math.random() * 7 - 3.5), 9, 90) }
+}
+
+function playLine(language: FriendLanguage, kind: 'start' | 'caught' | 'missed') {
+  const lines: Record<FriendLanguage, Record<'start' | 'caught' | 'missed', string[]>> = {
+    en: {
+      start: ['Catch me if you can!', 'Come on—catch me!', 'Game on!'],
+      caught: ['Okay okay, you got me!', 'HEY. That counts.', 'Fine. You win this one.'],
+      missed: ['Too slow!', 'You lost me!', 'That was your best attempt?'],
+    },
+    hi: {
+      start: ['Pakdo mujhe!', 'Chalo, pakad ke dikhao!', 'Game shuru!'],
+      caught: ['Arre! Pakad liya!', 'Accha accha, jeet gaye!', 'Theek hai, is baar tum jeete.'],
+      missed: ['Arre haar gaye!', 'Itne slow?', 'Pakad nahi paaye!'],
+    },
+    hinglish: {
+      start: ['Pakdo mujhe!', 'Catch me, boss!', 'Chal, pakad ke dikha!'],
+      caught: ['Arey! Pakad liya!', 'Okay okay, you win!', 'Fine bro, caught me.'],
+      missed: ['Arey haar gaya!', 'Too slow yaar!', 'Dar gaya kya? Pakad nahi paaya!'],
+    },
+  }
+  return randomItem(lines[language][kind])
+}
+
 function duoTarget(action: DuoAction, index: number): Position {
   const pair: Record<DuoAction, [Position, Position]> = {
     chase: [{ x: 40, y: 78 }, { x: 59, y: 78 }],
@@ -84,7 +117,7 @@ function Rope({ edge, length, styleName }: { edge: DangleEdge; length: number; s
   return <span className={`v3-rope v3-rope--${edge} v3-rope--${styleName}`} style={style} aria-hidden="true"><i /></span>
 }
 
-function CompanionActor({ index, settings, pro, duoEvent, onMessage }: { index: number; settings: GremlinSettings; pro: boolean; duoEvent: DuoEvent; onMessage: (message: string) => void }) {
+function CompanionActor({ index, settings, pro, duoEvent, friendAction, onMessage }: { index: number; settings: GremlinSettings; pro: boolean; duoEvent: DuoEvent; friendAction: FriendActionEvent; onMessage: (message: string) => void }) {
   const prefs = useCompanionPrefs()
   const v3 = useCompanionV3Prefs()
   const personality = PERSONALITIES[settings.personality]
@@ -93,12 +126,14 @@ function CompanionActor({ index, settings, pro, duoEvent, onMessage }: { index: 
   const [action, setAction] = useState('idle')
   const [speech, setSpeech] = useState(index ? 'friend mode.' : personality.lines[0])
   const [eye, setEye] = useState({ x: 0, y: 0 })
+  const [playLanguage, setPlayLanguage] = useState<FriendLanguage>('hinglish')
   const dragging = useRef(false)
   const dragDistance = useRef(0)
   const lastPointer = useRef({ x: 0, y: 0, time: 0 })
   const velocity = useRef({ x: 0, y: 0 })
   const throwFrame = useRef<number | null>(null)
   const actionTimer = useRef<number | null>(null)
+  const playTimers = useRef<number[]>([])
   const lastTap = useRef(0)
 
   const ropeLength = ropePixels(v3.ropeLength)
@@ -108,6 +143,11 @@ function CompanionActor({ index, settings, pro, duoEvent, onMessage }: { index: 
     '--custom-primary': prefs.customPrimary,
     '--custom-secondary': prefs.customSecondary,
   }) as CSSProperties, [prefs.customPrimary, prefs.customSecondary])
+
+  function clearPlayTimers() {
+    for (const timer of playTimers.current) window.clearTimeout(timer)
+    playTimers.current = []
+  }
 
   useEffect(() => {
     if (prefs.movementMode === 'parked') {
@@ -138,7 +178,62 @@ function CompanionActor({ index, settings, pro, duoEvent, onMessage }: { index: 
   }, [duoEvent, index, prefs.movementMode, pro])
 
   useEffect(() => {
-    if (settings.paused || prefs.movementMode !== 'free') return
+    if (!friendAction || index !== 0) return
+    clearPlayTimers()
+    if (actionTimer.current !== null) window.clearTimeout(actionTimer.current)
+
+    if (friendAction.action === 'quiet') {
+      setExpression('focused')
+      setAction('sit')
+      setSpeech(friendAction.language === 'en' ? 'Okay. Quiet mode.' : friendAction.language === 'hi' ? 'Theek hai. Main shaant hoon.' : 'Okay yaar, main quiet hoon.')
+      actionTimer.current = window.setTimeout(() => { setExpression('neutral'); setAction('idle'); setSpeech('') }, 1800)
+      return
+    }
+
+    if (friendAction.action === 'pat') {
+      setExpression('love')
+      setAction('wave')
+      setSpeech(friendAction.language === 'en' ? 'hehe. thanks.' : friendAction.language === 'hi' ? 'Hehe, accha laga.' : 'Hehe, nice yaar.')
+      actionTimer.current = window.setTimeout(() => { setExpression('neutral'); setAction('idle') }, 1400)
+      return
+    }
+
+    if (friendAction.action === 'bonk') {
+      setExpression('dizzy')
+      setAction('land')
+      setSpeech(friendAction.language === 'en' ? 'RUDE. Again?' : friendAction.language === 'hi' ? 'Arre! Phir se?' : 'Bro! Bonk kyun?')
+      actionTimer.current = window.setTimeout(() => { setExpression('annoyed'); setAction('idle') }, 1400)
+      return
+    }
+
+    setPlayLanguage(friendAction.language)
+    if (prefs.movementMode !== 'free') writeCompanionPrefs({ movementMode: 'free' })
+    setExpression('excited')
+    setAction('friend-chase')
+    setSpeech(playLine(friendAction.language, 'start'))
+    const first = chaseTarget()
+    setPosition(first)
+    writeCompanionPrefs({ lastX: first.x, lastY: first.y })
+
+    for (const delay of [520, 1040, 1560, 2080]) {
+      playTimers.current.push(window.setTimeout(() => {
+        if (dragging.current) return
+        const next = chaseTarget()
+        setPosition(next)
+        writeCompanionPrefs({ lastX: next.x, lastY: next.y })
+        setExpression(randomItem<Expression>(['excited', 'mischief', 'laugh']))
+      }, delay))
+    }
+    playTimers.current.push(window.setTimeout(() => {
+      setSpeech(playLine(friendAction.language, 'missed'))
+      setExpression('proud')
+      setAction('idle')
+      actionTimer.current = window.setTimeout(() => { setSpeech(''); setExpression('neutral') }, 1700)
+    }, 2750))
+  }, [friendAction, index])
+
+  useEffect(() => {
+    if (settings.paused || prefs.movementMode !== 'free' || action === 'friend-chase') return
     const base = settings.intensity === 'chill' ? 7200 : settings.intensity === 'chaos' ? 3100 : 5000
     const timer = window.setInterval(() => {
       if (dragging.current || duoEvent) return
@@ -152,11 +247,12 @@ function CompanionActor({ index, settings, pro, duoEvent, onMessage }: { index: 
       actionTimer.current = window.setTimeout(() => { setAction('idle'); setExpression('neutral') }, 1600)
     }, base + index * 450)
     return () => window.clearInterval(timer)
-  }, [duoEvent, index, personality.lines, prefs.movementMode, settings.intensity, settings.paused])
+  }, [action, duoEvent, index, personality.lines, prefs.movementMode, settings.intensity, settings.paused])
 
   useEffect(() => () => {
     if (throwFrame.current !== null) window.cancelAnimationFrame(throwFrame.current)
     if (actionTimer.current !== null) window.clearTimeout(actionTimer.current)
+    clearPlayTimers()
   }, [])
 
   function point(event: ReactPointerEvent<HTMLButtonElement>): Position {
@@ -199,6 +295,15 @@ function CompanionActor({ index, settings, pro, duoEvent, onMessage }: { index: 
   }
 
   function openQuick(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (action === 'friend-chase') {
+      clearPlayTimers()
+      setAction('caught')
+      setExpression('shocked')
+      setSpeech(playLine(playLanguage, 'caught'))
+      actionTimer.current = window.setTimeout(() => { setAction('idle'); setExpression('happy'); setSpeech('') }, 1500)
+      return
+    }
+
     const now = performance.now()
     const doubleTap = now - lastTap.current < 330
     lastTap.current = now
@@ -228,6 +333,8 @@ function CompanionActor({ index, settings, pro, duoEvent, onMessage }: { index: 
       openQuick(event)
       return
     }
+
+    clearPlayTimers()
 
     if (prefs.movementMode === 'parked') {
       setPosition(current)
@@ -288,13 +395,13 @@ function CompanionActor({ index, settings, pro, duoEvent, onMessage }: { index: 
       data-character={character}
       data-expression={expression}
       style={{ ...customStyle, left: `${position.x}%`, top: `${position.y}%` }}
-      onPointerEnter={() => { window.screenGremlin?.setInteractive(true); if (!dragging.current && prefs.movementMode !== 'dangle') { setExpression('curious'); setAction('wave') } }}
-      onPointerLeave={() => { setEye({ x: 0, y: 0 }); if (!dragging.current) { if (prefs.movementMode === 'free') { setExpression('neutral'); setAction('idle') } window.screenGremlin?.setInteractive(false) } }}
+      onPointerEnter={() => { window.screenGremlin?.setInteractive(true); if (!dragging.current && prefs.movementMode !== 'dangle' && action !== 'friend-chase') { setExpression('curious'); setAction('wave') } }}
+      onPointerLeave={() => { setEye({ x: 0, y: 0 }); if (!dragging.current) { if (prefs.movementMode === 'free' && action !== 'friend-chase') { setExpression('neutral'); setAction('idle') } window.screenGremlin?.setInteractive(false) } }}
       onPointerDown={pointerDown}
       onPointerMove={pointerMove}
       onPointerUp={pointerUp}
       onPointerCancel={pointerUp}
-      aria-label={`${settings.name}${index ? ' two' : ''}. Click for quick actions, drag to move, right-click for controls.`}
+      aria-label={`${settings.name}${index ? ' two' : ''}. Click to talk or catch me, drag to move, right-click for controls.`}
     >
       {prefs.movementMode === 'dangle' && v3.ropeEnabled && <Rope edge={prefs.dangleEdge} length={ropeLength} styleName={v3.ropeStyle} />}
       {settings.speech && speech && <span className="companion-speech v3-speech">{speech}</span>}
@@ -320,6 +427,7 @@ export default function DesktopCompanionV3() {
   const settings = state?.settings
   const [message, setMessage] = useState<string | null>(null)
   const [duoEvent, setDuoEvent] = useState<DuoEvent>(null)
+  const [friendAction, setFriendAction] = useState<FriendActionEvent>(null)
   const messageTimer = useRef<number | null>(null)
 
   function showMessage(text: string) {
@@ -327,6 +435,14 @@ export default function DesktopCompanionV3() {
     if (messageTimer.current !== null) window.clearTimeout(messageTimer.current)
     messageTimer.current = window.setTimeout(() => setMessage(null), 2600)
   }
+
+  useEffect(() => {
+    const api = window.screenGremlin
+    if (!api) return
+    return api.onFriendAction((event) => {
+      setFriendAction({ id: Date.now(), action: event.action, language: event.language })
+    })
+  }, [])
 
   useEffect(() => {
     if (!settings || !state?.pro || !settings.duo || settings.paused || prefs.movementMode !== 'free') return
@@ -359,7 +475,7 @@ export default function DesktopCompanionV3() {
 
   return <>
     {message && <div className="companion-v3-toast" role="status">{message}</div>}
-    <CompanionActor index={0} settings={settings} pro={state.pro} duoEvent={duoEvent} onMessage={showMessage}/>
-    {settings.duo && state.pro && <CompanionActor index={1} settings={settings} pro={state.pro} duoEvent={duoEvent} onMessage={showMessage}/>} 
+    <CompanionActor index={0} settings={settings} pro={state.pro} duoEvent={duoEvent} friendAction={friendAction} onMessage={showMessage}/>
+    {settings.duo && state.pro && <CompanionActor index={1} settings={settings} pro={state.pro} duoEvent={duoEvent} friendAction={null} onMessage={showMessage}/>} 
   </>
 }

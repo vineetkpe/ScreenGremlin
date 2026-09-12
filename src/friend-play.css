@@ -1,0 +1,4 @@
+.companion-action--friend-chase .character-art-v3{animation:friend-chase-bounce .24s ease-in-out infinite alternate;filter:drop-shadow(0 10px 10px rgba(0,0,0,.24))}.companion-action--friend-chase{transition:left .34s cubic-bezier(.2,.85,.25,1),top .34s cubic-bezier(.2,.85,.25,1)!important}.companion-action--caught .character-art-v3{animation:friend-caught .7s cubic-bezier(.2,.8,.2,1)}
+@keyframes friend-chase-bounce{from{transform:translateY(0) rotate(-4deg) scale(1)}to{transform:translateY(-7px) rotate(4deg) scale(1.04)}}
+@keyframes friend-caught{0%{transform:scale(1)}35%{transform:scale(.82) rotate(-7deg)}65%{transform:scale(1.08) rotate(5deg)}100%{transform:scale(1) rotate(0)}}
+@media(prefers-reduced-motion:reduce){.companion-action--friend-chase,.companion-action--friend-chase .character-art-v3,.companion-action--caught .character-art-v3{animation:none!important;transition:none!important}}

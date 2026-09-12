@@ -12,6 +12,13 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    env:
+      SCREEN_GREMLIN_PUBLIC_RELEASE: ${{ startsWith(github.ref, 'refs/tags/') && '1' || '0' }}
+      WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+      WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -32,6 +39,9 @@ jobs:
       - name: Check product
         run: npm run check
 
+      - name: Refuse unsigned public Windows release
+        run: npm run check:signing
+
   package:
     needs: verify
     strategy:
@@ -49,6 +59,12 @@ jobs:
             artifact: linux
 
     runs-on: ${{ matrix.os }}
+    env:
+      WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+      WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
 
     steps:
       - name: Checkout

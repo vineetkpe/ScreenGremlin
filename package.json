@@ -1,21 +1,22 @@
 {
   "name": "screen-gremlin",
   "productName": "ScreenGremlin",
-  "version": "1.3.0",
+  "version": "2.0.0-alpha.1",
   "private": true,
   "license": "UNLICENSED",
-  "description": "A lightweight desktop companion with playful characters and local productivity tools.",
+  "description": "A lightweight desktop digital friend with playful characters, voice, emotions and local productivity tools.",
   "author": "ScreenGremlin",
   "type": "module",
-  "main": "electron/main.cjs",
+  "main": "electron/main-v2.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "desktop": "npm run build && electron .",
     "desktop:pro": "npm run build && SCREEN_GREMLIN_DEV_PRO=1 electron .",
-    "check:desktop": "node --check electron/main.cjs && node --check electron/preload.cjs && node --check electron/product-config.cjs",
+    "check:desktop": "node --check electron/main.cjs && node --check electron/main-v2.cjs && node --check electron/friend-agent.cjs && node --check electron/preload.cjs && node --check electron/friend-preload.cjs && node --check electron/product-config.cjs",
     "check:license": "node --check scripts/generate-license.mjs",
+    "check:signing": "node scripts/verify-public-signing.mjs",
     "check": "npm run check:desktop && npm run check:license && npm run build",
     "audit": "npm audit --audit-level=high",
     "pack": "npm run build && electron-builder --dir --publish never",
@@ -62,7 +63,7 @@
       "build/**/*",
       "package.json"
     ],
-    "extraMetadata": { "main": "electron/main.cjs" },
+    "extraMetadata": { "main": "electron/main-v2.cjs" },
     "win": {
       "target": [{ "target": "nsis", "arch": ["x64"] }],
       "artifactName": "ScreenGremlin-${version}-Setup.${ext}"
