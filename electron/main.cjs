@@ -47,6 +47,7 @@ const MAX_LICENSE_KEY_LENGTH = 8192
 const MAX_LICENSE_PAYLOAD_BYTES = 4096
 const MAX_EXTERNAL_URL_LENGTH = 2048
 const APP_ORIGIN = 'screengremlin://app'
+const SMOKE_TEST_ENABLED = !app.isPackaged && process.env.SCREEN_GREMLIN_SMOKE_TEST === '1'
 
 const LICENSE_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEA+0DdrXsoSFENxemSmGEwMR97JWst6JZMPjLXk466JiE=
@@ -61,6 +62,7 @@ let appState = {
 let settingsWindow = null
 let tray = null
 let isQuitting = false
+let smokeTestSettled = false
 const overlayWindows = new Map()
 
 function stateFilePath() {
@@ -300,6 +302,31 @@ function hardenWebContents(contents) {
   })
 }
 
+function attachSmokeTest(contents) {
+  if (!SMOKE_TEST_ENABLED) return
+
+  contents.once('did-finish-load', () => {
+    if (smokeTestSettled) return
+    const loadedUrl = contents.getURL()
+    if (!loadedUrl.startsWith(`${APP_ORIGIN}/`)) {
+      smokeTestSettled = true
+      console.error(`Smoke test loaded an unexpected URL: ${loadedUrl}`)
+      app.exit(1)
+      return
+    }
+
+    smokeTestSettled = true
+    setTimeout(() => app.exit(0), 100)
+  })
+
+  contents.once('did-fail-load', (_event, errorCode, errorDescription, validatedUrl, isMainFrame) => {
+    if (!isMainFrame || smokeTestSettled) return
+    smokeTestSettled = true
+    console.error(`Smoke test failed to load ${validatedUrl}: ${errorCode} ${errorDescription}`)
+    app.exit(1)
+  })
+}
+
 function renderApp(window, mode) {
   return window.loadURL(`${APP_ORIGIN}/index.html?mode=${encodeURIComponent(mode)}`)
 }
@@ -520,20 +547,33 @@ function registerIpc() {
   })
 }
 
-app.on('web-contents-created', (_event, contents) => hardenWebContents(contents))
+app.on('web-contents-created', (_event, contents) => {
+  hardenWebContents(contents)
+  attachSmokeTest(contents)
+})
 
 if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
   app.on('second-instance', () => createSettingsWindow())
   app.whenReady().then(() => {
+    if (SMOKE_TEST_ENABLED) {
+      setTimeout(() => {
+        if (!smokeTestSettled) {
+          smokeTestSettled = true
+          console.error('Smoke test timed out before the renderer loaded.')
+          app.exit(1)
+        }
+      }, 10000).unref()
+    }
+
     registerAppProtocol()
     configureSessionSecurity()
     loadState()
     applyLoginSetting()
     registerIpc()
     syncOverlays()
-    createTray()
+    if (!SMOKE_TEST_ENABLED) createTray()
     globalShortcut.register('CommandOrControl+Shift+G', () => updateSettings({ paused: !appState.settings.paused }))
     screen.on('display-added', syncOverlays)
     screen.on('display-removed', syncOverlays)
