@@ -4,12 +4,13 @@ import { parseQuickCommand, useCompanionPrefs } from './companion-store'
 import { respondLocally, type FriendExpression, type FriendLanguage } from './friend-brain'
 
 type VoiceStyle = 'female' | 'male' | 'cute' | 'calm'
+type FriendAction = 'play' | 'pat' | 'bonk' | 'quiet'
 type ChatItem = { id: string; from: 'user' | 'friend'; text: string; expression?: FriendExpression }
 
 type AgentReply = {
   ok: boolean
   reason?: string
-  reply?: { text: string; expression?: FriendExpression; mood?: string }
+  reply?: { text: string; expression?: FriendExpression; mood?: string; action?: FriendAction }
 }
 
 const PREF_KEY = 'screen-gremlin:friend-prefs:v1'
@@ -100,7 +101,8 @@ export default function FriendBubble() {
   useEffect(() => {
     inputRef.current?.focus()
     const timer = window.setTimeout(() => inputRef.current?.focus(), 80)
-    void window.screenGremlinFriend?.getAgentStatus().then((status) => setAgentConfigured(Boolean(status?.configured)))
+    const api = window.screenGremlinFriend
+    if (api) void api.getAgentStatus().then((status) => setAgentConfigured(Boolean(status?.configured)))
     return () => window.clearTimeout(timer)
   }, [])
 
@@ -118,6 +120,11 @@ export default function FriendBubble() {
     const item: ChatItem = { id: uid(), from: 'friend', text, expression: nextExpression }
     setChat((before) => [...before, item])
     speak(text, prefs)
+  }
+
+  function triggerAction(action?: FriendAction) {
+    if (!action) return
+    void window.screenGremlinFriend?.triggerAction(action, prefs.language)
   }
 
   async function submit() {
@@ -139,22 +146,26 @@ export default function FriendBubble() {
     setThinking(true)
     setExpression('thinking')
     try {
-      const agentResult = await window.screenGremlinFriend?.chat({
+      const api = window.screenGremlinFriend
+      const agentResult = api ? await api.chat({
         message: text,
         language: prefs.language,
         voiceStyle: prefs.voiceStyle,
         history: snapshot.slice(-12).map((item) => ({ role: item.from === 'friend' ? 'assistant' : 'user', text: item.text })),
-      }) as AgentReply | undefined
+      }) as AgentReply : undefined
 
       if (agentResult?.ok && agentResult.reply?.text) {
         const nextExpression = agentResult.reply.expression || 'happy'
         addReply(agentResult.reply.text, nextExpression)
+        triggerAction(agentResult.reply.action)
         localStorage.setItem('screen-gremlin:friend-last-emotion:v1', JSON.stringify({ mood: agentResult.reply.mood || 'happy', expression: nextExpression, at: Date.now() }))
         return
       }
 
       const fallback = respondLocally(text, prefs.language)
       addReply(fallback.text, fallback.expression)
+      if (fallback.action === 'play') triggerAction('play')
+      if (fallback.action === 'quiet') triggerAction('quiet')
       localStorage.setItem('screen-gremlin:friend-last-emotion:v1', JSON.stringify({ mood: fallback.mood, expression: fallback.expression, at: Date.now() }))
     } finally {
       setThinking(false)
@@ -205,7 +216,7 @@ export default function FriendBubble() {
       <section className="friend-window__chat" aria-live="polite">
         {chat.length === 0 && <div className="friend-window__welcome">
           <strong>Talk normally.</strong>
-          <span>Try “I’m bored”, “pakdo mujhe”, “todo finish project”, or just tell me about your day.</span>
+          <span>Try “play with me”, “pakdo mujhe”, “todo finish project”, or just tell me about your day.</span>
         </div>}
         {chat.map((item) => <div key={item.id} className={`friend-msg friend-msg--${item.from}`}><span>{item.text}</span></div>)}
         {thinking && <div className="friend-msg friend-msg--friend"><span>…</span></div>}
@@ -213,7 +224,7 @@ export default function FriendBubble() {
       </section>
 
       <section className="friend-window__quick">
-        <button type="button" onClick={() => { setDraft('I am bored'); inputRef.current?.focus() }}>Play</button>
+        <button type="button" onClick={() => { setDraft('play with me'); inputRef.current?.focus() }}>Play</button>
         <button type="button" onClick={() => { setDraft('todo '); inputRef.current?.focus() }}>Todo</button>
         <button type="button" onClick={() => { setDraft('note '); inputRef.current?.focus() }}>Note</button>
         <button type="button" onClick={() => { setDraft('remind 30m '); inputRef.current?.focus() }}>Reminder</button>
