@@ -241,15 +241,20 @@ function loadState() {
   try {
     const raw = fs.readFileSync(stateFilePath(), 'utf8')
     const parsed = JSON.parse(raw)
-    appState.settings = {
-      ...DEFAULT_SETTINGS,
-      ...(parsed.settings && typeof parsed.settings === 'object' ? parsed.settings : {}),
-    }
-    appState.settings = { ...DEFAULT_SETTINGS, ...sanitizeSettingsPatch(appState.settings) }
-    appState.licenseKey = typeof parsed.licenseKey === 'string' ? parsed.licenseKey.slice(0, MAX_LICENSE_KEY_LENGTH) : ''
+
+    appState.licenseKey = typeof parsed.licenseKey === 'string'
+      ? parsed.licenseKey.slice(0, MAX_LICENSE_KEY_LENGTH)
+      : ''
     const licenseResult = verifyLicenseKey(appState.licenseKey)
     appState.license = licenseResult.valid ? licenseResult.license : null
-    appState.settings = { ...DEFAULT_SETTINGS, ...sanitizeSettingsPatch(appState.settings) }
+
+    const persistedSettings = parsed.settings && typeof parsed.settings === 'object'
+      ? parsed.settings
+      : {}
+    appState.settings = {
+      ...DEFAULT_SETTINGS,
+      ...sanitizeSettingsPatch({ ...DEFAULT_SETTINGS, ...persistedSettings }),
+    }
   } catch {
     appState = {
       settings: { ...DEFAULT_SETTINGS },
