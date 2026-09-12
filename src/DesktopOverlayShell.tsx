@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import CompanionEffects from './CompanionEffects'
 import DesktopCompanionV2 from './DesktopCompanionV2'
 import { useCompanionPrefs, writeCompanionPrefs, type DangleEdge, type MovementMode } from './companion-store'
 import { DEFAULT_SETTINGS, PERSONALITIES, isFocusActive, type GremlinSettings } from './gremlin'
@@ -29,12 +30,8 @@ function SleepingGremlin({ focusActive }: { focusActive: boolean }) {
       <span className="ear ear--left" aria-hidden="true" />
       <span className="ear ear--right" aria-hidden="true" />
       <span className="gremlin-body" aria-hidden="true">
-        <span className="brow brow--left" />
-        <span className="brow brow--right" />
-        <span className="eye eye--left" />
-        <span className="eye eye--right" />
-        <span className="mouth" />
-        <span className="sleep-mark">z</span>
+        <span className="brow brow--left" /><span className="brow brow--right" />
+        <span className="eye eye--left" /><span className="eye eye--right" /><span className="mouth" /><span className="sleep-mark">z</span>
       </span>
     </button>
   )
@@ -117,19 +114,11 @@ export default function DesktopOverlayShell() {
 
   return (
     <>
+      <CompanionEffects />
       {!asleep && <DesktopCompanionV2 />}
       {asleep && <SleepingGremlin focusActive={focusActive} />}
-
       {menuPosition && (
-        <aside
-          className="character-context-menu"
-          style={menuStyle}
-          role="menu"
-          aria-label="ScreenGremlin character menu"
-          onPointerEnter={() => window.screenGremlin?.setInteractive(true)}
-          onPointerLeave={() => closeMenu()}
-          onContextMenu={(event) => event.preventDefault()}
-        >
+        <aside className="character-context-menu" style={menuStyle} role="menu" aria-label="ScreenGremlin character menu" onPointerEnter={() => window.screenGremlin?.setInteractive(true)} onPointerLeave={() => closeMenu()} onContextMenu={(event) => event.preventDefault()}>
           <header><strong>{settings.name}</strong><span>{PERSONALITIES[settings.personality].label} · {prefs.movementMode}</span></header>
           <button type="button" role="menuitem" onClick={openDashboard}><span>Dashboard</span><small>Character, productivity & Pro</small></button>
           <button type="button" role="menuitem" onClick={openDashboard}><span>Customize</span><small>Original characters & expressions</small></button>
