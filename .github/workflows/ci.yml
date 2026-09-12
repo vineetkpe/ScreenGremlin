@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches:
+      - main
+      - full-mvp
       - 'step-*'
   pull_request:
 
@@ -20,11 +22,27 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-        env:
-          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
 
-      - name: Check desktop runtime
-        run: npm run check:desktop
+      - name: Check product
+        run: npm run check
 
-      - name: Build frontend
+  package-smoke:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build renderer
         run: npm run build
+
+      - name: Package Linux directory
+        run: npx electron-builder --linux --dir
