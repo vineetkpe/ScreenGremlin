@@ -54,6 +54,11 @@ jobs:
       - name: Build renderer
         run: npm run build
 
+      - name: Configure Electron sandbox helper
+        run: |
+          sudo chown root:root node_modules/electron/dist/chrome-sandbox
+          sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
+
       - name: Smoke launch hardened desktop shell
         env:
           SCREEN_GREMLIN_SMOKE_TEST: '1'
