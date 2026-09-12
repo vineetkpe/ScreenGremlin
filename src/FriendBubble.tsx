@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import CharacterArtV3 from './CharacterArtV3'
-import { parseQuickCommand, useCompanionPrefs } from './companion-store'
+import { parseQuickCommand, useCompanionPrefs, type Expression } from './companion-store'
 import { respondLocally, type FriendExpression, type FriendLanguage } from './friend-brain'
 
 type VoiceStyle = 'female' | 'male' | 'cute' | 'calm'
@@ -82,6 +82,12 @@ function speak(text: string, prefs: FriendPrefs) {
 
 function uid() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+}
+
+function visualExpression(expression: FriendExpression): Expression {
+  if (expression === 'teasing') return 'mischief'
+  if (expression === 'smug') return 'proud'
+  return expression
 }
 
 export default function FriendBubble() {
@@ -186,7 +192,7 @@ export default function FriendBubble() {
         <div className="friend-window__avatar" aria-hidden="true">
           <CharacterArtV3
             character={character}
-            expression={expression}
+            expression={visualExpression(expression)}
             accessory="none"
             customPrimary={companion.customPrimary}
             customSecondary={companion.customSecondary}
