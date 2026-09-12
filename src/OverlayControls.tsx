@@ -24,14 +24,15 @@ function DesktopOverlayControls() {
 
   if (!state || !window.screenGremlin) return null
 
-  const settings = state.settings
+  const currentState = state
+  const settings = currentState.settings
 
   function update(patch: Partial<ScreenGremlinSettings>) {
     void window.screenGremlin?.updateSettings(patch)
   }
 
   function cycleIntensity() {
-    const levels: ScreenGremlinIntensity[] = state.pro
+    const levels: ScreenGremlinIntensity[] = currentState.pro
       ? ['chill', 'normal', 'chaos']
       : ['chill', 'normal']
     const currentIndex = levels.indexOf(settings.intensity)
