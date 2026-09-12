@@ -55,8 +55,12 @@ interface Window {
     openExternal(url: string): Promise<boolean>
     openSettings(): Promise<boolean>
     closeSettings(): Promise<boolean>
+    openFriend(anchor: { x: number; y: number }): Promise<boolean>
     quitApp(): Promise<boolean>
     setInteractive(interactive: boolean): void
     onStateChanged(callback: (state: ScreenGremlinState) => void): () => void
+  }
+  screenGremlinFriend?: {
+    close(): Promise<boolean>
   }
 }
