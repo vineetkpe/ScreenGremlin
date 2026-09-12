@@ -1,0 +1,123 @@
+.companion-v2-root { position: fixed; inset: 0; pointer-events: none; z-index: 20; font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+.companion-character { position: fixed; width: 104px; height: 112px; padding: 0; border: 0; background: transparent; pointer-events: auto; transform: translate(-50%,-50%); cursor: grab; transition: left .8s cubic-bezier(.2,.78,.25,1), top .8s cubic-bezier(.2,.78,.25,1); }
+.companion-character:active { cursor: grabbing; }
+.companion-body { position: absolute; left: 12px; top: 18px; width: 80px; height: 76px; border: 3px solid #171719; border-radius: 42% 42% 38% 38%; background: var(--gremlin-accent,#b2ff59); box-shadow: 0 18px 25px rgba(0,0,0,.3), inset 0 -10px 0 rgba(0,0,0,.08); transform-origin: 50% 85%; transition: transform .18s ease, border-radius .2s ease, filter .18s ease; }
+.companion-speech { position: absolute; left: 50%; bottom: 96px; max-width: 190px; min-width: 74px; padding: 7px 9px; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.13); border-radius: 10px 10px 10px 2px; background: rgba(18,18,20,.94); color: #eee; box-shadow: 0 9px 28px rgba(0,0,0,.28); font-size: 9px; line-height: 1.35; white-space: nowrap; }
+.companion-ear { position: absolute; top: 7px; width: 24px; height: 30px; border: 3px solid #171719; background: var(--gremlin-accent,#b2ff59); z-index: -1; }
+.companion-ear--left { left: -10px; border-radius: 80% 20% 50% 20%; transform: rotate(-24deg); }
+.companion-ear--right { right: -10px; border-radius: 20% 80% 20% 50%; transform: rotate(24deg); }
+.companion-eye { position: absolute; top: 27px; width: 11px; height: 13px; border-radius: 50%; background: #171719; transition: all .15s ease; }
+.companion-eye--left { left: 20px; }
+.companion-eye--right { right: 20px; }
+.companion-brow { position: absolute; top: 18px; width: 20px; height: 3px; border-radius: 3px; background: #171719; transition: transform .15s ease, top .15s ease; }
+.companion-brow--left { left: 14px; transform: rotate(-6deg); }
+.companion-brow--right { right: 14px; transform: rotate(6deg); }
+.companion-mouth { position: absolute; left: 50%; top: 50px; width: 25px; height: 11px; transform: translateX(-50%); border-bottom: 4px solid #171719; border-radius: 0 0 50% 50%; transition: all .15s ease; }
+.companion-special { position: absolute; pointer-events: none; }
+.companion-duo-mark { position: absolute; right: -6px; bottom: -7px; display: grid; place-items: center; width: 19px; height: 19px; border: 2px solid #171719; border-radius: 50%; background: #fff; color: #171719; font-size: 8px; font-weight: 900; }
+.companion-v2-toast { position: fixed; left: 50%; top: 24px; transform: translateX(-50%); max-width: min(520px,calc(100vw - 40px)); padding: 10px 14px; border: 1px solid rgba(178,255,89,.35); border-radius: 12px; background: rgba(16,16,18,.96); color: #eee; box-shadow: 0 18px 45px rgba(0,0,0,.34); font-size: 11px; pointer-events: none; }
+
+/* Original character silhouettes. */
+.companion-character--pebblebot .companion-body { border-radius: 18px; background: #d7dde6; box-shadow: 0 18px 25px rgba(0,0,0,.3), inset 0 -12px #aab4c1; }
+.companion-character--pebblebot .companion-ear { width: 13px; height: 22px; top: 24px; border-radius: 6px; background: #8e99a8; }
+.companion-character--pebblebot .companion-special--a { left: 36px; top: -16px; width: 4px; height: 17px; background: #171719; }
+.companion-character--pebblebot .companion-special--b { left: 31px; top: -21px; width: 14px; height: 14px; border: 3px solid #171719; border-radius: 50%; background: #ff7a7a; }
+.companion-character--mossling .companion-body { border-radius: 48% 48% 43% 43%; background: #7dcd68; }
+.companion-character--mossling .companion-special--a { left: 14px; top: -22px; width: 27px; height: 29px; border-radius: 100% 0 100% 0; background: #4b9b54; transform: rotate(-24deg); }
+.companion-character--mossling .companion-special--b { right: 8px; top: -17px; width: 24px; height: 25px; border-radius: 0 100% 0 100%; background: #5fb45e; transform: rotate(18deg); }
+.companion-character--bloop .companion-body { height: 66px; top: 28px; border-radius: 52% 48% 38% 42%; background: #78d9ff; transform-origin: 50% 100%; }
+.companion-character--bloop .companion-ear { display: none; }
+.companion-character--bloop .companion-special--a { left: 8px; bottom: -10px; width: 18px; height: 20px; border-radius: 50%; background: #78d9ff; border: 3px solid #171719; }
+.companion-character--bloop .companion-special--b { right: 8px; bottom: -10px; width: 18px; height: 20px; border-radius: 50%; background: #78d9ff; border: 3px solid #171719; }
+.companion-character--nimbus .companion-body { border-radius: 48px; background: #d9e1ec; box-shadow: -15px 5px 0 -2px #d9e1ec, 15px 7px 0 -3px #d9e1ec, 0 18px 25px rgba(0,0,0,.25); }
+.companion-character--nimbus .companion-ear { display: none; }
+.companion-character--nimbus .companion-special--a { left: 18px; bottom: -27px; width: 7px; height: 29px; background: #79e6ff; transform: skew(-16deg); box-shadow: 26px 3px 0 #79e6ff; }
+.companion-character--bytebug .companion-body { border-radius: 9px; background: #b69cff; image-rendering: pixelated; }
+.companion-character--bytebug .companion-ear { border-radius: 4px; width: 17px; height: 22px; top: 4px; background: #9179d9; }
+.companion-character--bytebug .companion-special--a { left: 12px; bottom: -10px; width: 14px; height: 14px; background: #b69cff; border: 3px solid #171719; box-shadow: 36px 0 0 #b69cff, 36px 0 0 3px #171719; }
+.companion-character--wisp .companion-body { width: 68px; height: 68px; left: 18px; border-radius: 50%; border-color: #4e3d74; background: #b69cff; filter: drop-shadow(0 0 9px rgba(182,156,255,.6)); }
+.companion-character--wisp .companion-ear { display: none; }
+.companion-character--wisp .companion-special--a { left: 46px; bottom: -27px; width: 14px; height: 40px; border: 3px solid #4e3d74; border-top: 0; border-left: 0; border-radius: 0 0 20px 0; transform: rotate(22deg); }
+.companion-character--mooncat .companion-body { border-radius: 46% 46% 40% 40%; background: #9aa5bf; }
+.companion-character--mooncat .companion-ear { top: -4px; width: 28px; height: 34px; border-radius: 5px 80% 15% 80%; background: #9aa5bf; }
+.companion-character--mooncat .companion-special--a { right: -23px; bottom: 6px; width: 32px; height: 47px; border: 6px solid #6f7991; border-left: 0; border-bottom: 0; border-radius: 0 30px 0 0; transform: rotate(28deg); }
+.companion-character--custom .companion-body { background: var(--custom-primary); }
+.companion-character--custom .companion-ear { background: var(--custom-secondary); }
+.companion-character--custom.custom-round .companion-body { border-radius: 50%; }
+.companion-character--custom.custom-tall .companion-body { height: 88px; top: 10px; border-radius: 34px; }
+.companion-character--custom.custom-square .companion-body { border-radius: 13px; }
+.companion-character--custom.custom-eyes-wide .companion-eye { width: 17px; height: 16px; background: #fff; border: 3px solid #171719; }
+.companion-character--custom.custom-eyes-sleepy .companion-eye { height: 4px; border-radius: 999px; top: 34px; }
+
+/* 26 expression states. */
+.expression-happy .companion-mouth,.expression-love .companion-mouth,.expression-celebrate .companion-mouth { height: 15px; border-bottom-width: 5px; }
+.expression-laugh .companion-mouth,.expression-excited .companion-mouth { width: 24px; height: 20px; border: 4px solid #171719; border-top-width: 2px; background: rgba(20,20,20,.12); border-radius: 35% 35% 50% 50%; }
+.expression-annoyed .companion-brow--left,.expression-angry .companion-brow--left { transform: rotate(18deg); }
+.expression-annoyed .companion-brow--right,.expression-angry .companion-brow--right { transform: rotate(-18deg); }
+.expression-angry .companion-mouth { border-bottom: 0; border-top: 4px solid #171719; border-radius: 50% 50% 0 0; top: 57px; }
+.expression-sleepy .companion-eye,.expression-bored .companion-eye { height: 4px; border-radius: 999px; top: 35px; }
+.expression-sleepy .companion-mouth { width: 13px; height: 5px; border: 3px solid #171719; border-radius: 50%; top: 56px; }
+.expression-shocked .companion-eye,.expression-scared .companion-eye { width: 15px; height: 19px; top: 24px; }
+.expression-shocked .companion-mouth,.expression-scared .companion-mouth { width: 13px; height: 16px; border: 4px solid #171719; border-radius: 50%; }
+.expression-confused .companion-brow--left { transform: rotate(-22deg); top: 14px; }
+.expression-confused .companion-brow--right { transform: rotate(-3deg); top: 23px; }
+.expression-curious .companion-eye--left { width: 15px; height: 16px; }
+.expression-curious .companion-eye--right { width: 9px; height: 11px; top: 30px; }
+.expression-proud .companion-eye { height: 6px; border-radius: 999px 999px 3px 3px; transform: rotate(-4deg); }
+.expression-proud .companion-mouth { width: 18px; left: 58%; }
+.expression-sneaky .companion-eye { height: 7px; border-radius: 50% 50% 20% 20%; }
+.expression-sneaky .companion-mouth { width: 20px; transform: translateX(-36%) rotate(-8deg); }
+.expression-dizzy .companion-eye { background: transparent; border: 3px solid #171719; width: 13px; height: 13px; }
+.expression-sad .companion-mouth,.expression-embarrassed .companion-mouth { border-bottom: 0; border-top: 4px solid #171719; border-radius: 50% 50% 0 0; top: 58px; }
+.expression-thinking .companion-eye--right { height: 5px; top: 35px; }
+.expression-thinking .companion-mouth { width: 13px; left: 60%; }
+.expression-hungry .companion-mouth { width: 28px; height: 15px; border: 4px solid #171719; border-radius: 50%; }
+.expression-dance .companion-body { transform: rotate(-8deg) translateY(-4px); }
+.expression-facepalm .companion-special--b { right: 10px; top: 29px; width: 28px; height: 8px; border-radius: 9px; background: var(--gremlin-accent); transform: rotate(-36deg); }
+.expression-embarrassed .companion-body { filter: saturate(.8); }
+.expression-focused .companion-brow { top: 20px; }
+.expression-focused .companion-eye { height: 9px; }
+.expression-mischief .companion-brow--left { transform: rotate(-18deg); }
+.expression-mischief .companion-brow--right { transform: rotate(18deg); }
+.expression-love .companion-eye { background: #ff5e8b; transform: rotate(45deg); border-radius: 2px 50% 50% 50%; }
+.expression-determined .companion-brow--left { transform: rotate(12deg); }
+.expression-determined .companion-brow--right { transform: rotate(-12deg); }
+.expression-determined .companion-mouth { width: 20px; border-radius: 0; }
+
+.companion-action--wander .companion-body { animation: companion-step .45s ease-in-out 2 alternate; }
+.companion-action--hop .companion-body { animation: companion-hop .65s ease; }
+.companion-action--dragged { transition: none; }
+.companion-action--dragged .companion-body { transform: rotate(-5deg) scale(1.06); }
+.companion-action--thrown { transition: none; }
+.companion-action--thrown .companion-body { animation: companion-spin .34s linear infinite; }
+.companion-action--parked .companion-body { animation: companion-breathe 2.8s ease-in-out infinite; }
+.companion-action--dangle-top .companion-body,.companion-action--dangle-bottom .companion-body,.companion-action--dangle-left .companion-body,.companion-action--dangle-right .companion-body { animation: companion-dangle 2.1s ease-in-out infinite alternate; }
+.companion-action--dangle-top .companion-body { transform-origin: 50% -20%; }
+.companion-action--dangle-bottom .companion-body { transform-origin: 50% 120%; }
+.companion-action--dangle-left .companion-body { transform-origin: -20% 50%; }
+.companion-action--dangle-right .companion-body { transform-origin: 120% 50%; }
+.companion-action--duo-chase .companion-body { animation: companion-chase .4s ease-in-out 5 alternate; }
+.companion-action--duo-spar .companion-body { animation: companion-spar .3s ease-in-out 6 alternate; }
+.companion-action--duo-highfive .companion-body { animation: companion-highfive .6s ease 3; }
+.companion-action--duo-dance .companion-body { animation: companion-dance .35s ease-in-out 7 alternate; }
+.companion-action--duo-steal .companion-body { animation: companion-steal .45s ease-in-out 5 alternate; }
+.companion-action--duo-race { animation: companion-race 2.2s ease-in-out both; }
+.companion-action--duo-nap .companion-body { animation: companion-breathe 2s ease-in-out infinite; }
+.companion-action--duo-stare .companion-body { animation: companion-stare .8s ease-in-out 3 alternate; }
+
+@keyframes companion-step { to { transform: translateY(-7px) rotate(4deg); } }
+@keyframes companion-hop { 45% { transform: translateY(-18px) scale(.96,1.05); } }
+@keyframes companion-spin { to { transform: rotate(360deg); } }
+@keyframes companion-breathe { 50% { transform: scale(1.025,.98); } }
+@keyframes companion-dangle { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
+@keyframes companion-chase { to { transform: translateX(12px) rotate(8deg); } }
+@keyframes companion-spar { to { transform: translateX(7px) rotate(-8deg); } }
+@keyframes companion-highfive { 50% { transform: translateY(-12px) rotate(12deg); } }
+@keyframes companion-dance { to { transform: translateY(-9px) rotate(10deg); } }
+@keyframes companion-steal { to { transform: translateX(-8px) rotate(-6deg); } }
+@keyframes companion-race { 0% { transform: translate(-50%,-50%); } 50% { left: 78%; } 100% { left: 24%; } }
+@keyframes companion-stare { to { transform: scale(1.04); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .companion-character,.companion-body { transition: none !important; animation: none !important; }
+}

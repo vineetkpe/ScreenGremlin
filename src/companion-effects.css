@@ -1,0 +1,64 @@
+.companion-character[data-accessory="cap"] .companion-body::before,
+.companion-character[data-accessory="glasses"] .companion-body::before,
+.companion-character[data-accessory="headphones"] .companion-body::before,
+.companion-character[data-accessory="crown"] .companion-body::before,
+.companion-character[data-accessory="glasses"] .companion-body::after,
+.companion-character[data-accessory="headphones"] .companion-body::after {
+  content:"";
+  position:absolute;
+  pointer-events:none;
+  z-index:12;
+}
+
+.companion-character[data-accessory="cap"] .companion-body::before {
+  left:13px;
+  top:-14px;
+  width:48px;
+  height:17px;
+  border:3px solid #171719;
+  border-radius:25px 25px 7px 7px;
+  background:#25252a;
+  transform:rotate(-5deg);
+  box-shadow:14px 8px 0 -5px #25252a;
+}
+
+.companion-character[data-accessory="glasses"] .companion-body::before,
+.companion-character[data-accessory="glasses"] .companion-body::after {
+  top:24px;
+  width:23px;
+  height:17px;
+  border:3px solid #171719;
+  border-radius:7px;
+  background:rgba(121,230,255,.13);
+}
+.companion-character[data-accessory="glasses"] .companion-body::before { left:12px; box-shadow:24px 2px 0 -10px #171719; }
+.companion-character[data-accessory="glasses"] .companion-body::after { right:12px; }
+
+.companion-character[data-accessory="headphones"] .companion-body::before {
+  left:5px;
+  top:-8px;
+  width:64px;
+  height:48px;
+  border:5px solid #26262b;
+  border-bottom:0;
+  border-radius:38px 38px 0 0;
+}
+.companion-character[data-accessory="headphones"] .companion-body::after {
+  left:-2px;
+  top:28px;
+  width:10px;
+  height:25px;
+  border-radius:8px;
+  background:#26262b;
+  box-shadow:73px 0 0 #26262b;
+}
+
+.companion-character[data-accessory="crown"] .companion-body::before {
+  left:18px;
+  top:-26px;
+  width:44px;
+  height:30px;
+  background:#ffd84d;
+  clip-path:polygon(0 100%,0 36%,20% 64%,38% 0,58% 62%,82% 10%,100% 100%);
+  filter:drop-shadow(0 2px 0 #7a5f00);
+}
