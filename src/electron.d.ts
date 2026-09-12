@@ -46,6 +46,17 @@ type ScreenGremlinActivationResult =
   | { valid: true; state: ScreenGremlinState }
   | { valid: false; error: string }
 
+type ScreenGremlinFriendChatInput = {
+  message: string
+  language: 'en' | 'hi' | 'hinglish'
+  voiceStyle: 'female' | 'male' | 'cute' | 'calm'
+  history: Array<{ role: 'user' | 'assistant'; text: string }>
+}
+
+type ScreenGremlinFriendChatResult =
+  | { ok: true; reply: { text: string; expression: string; mood: string } }
+  | { ok: false; reason: string }
+
 interface Window {
   screenGremlin?: {
     getState(): Promise<ScreenGremlinState | null>
@@ -62,5 +73,7 @@ interface Window {
   }
   screenGremlinFriend?: {
     close(): Promise<boolean>
+    chat(input: ScreenGremlinFriendChatInput): Promise<ScreenGremlinFriendChatResult>
+    getAgentStatus(): Promise<{ configured: boolean }>
   }
 }
