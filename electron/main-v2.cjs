@@ -9,6 +9,7 @@ require('./main.cjs')
 const APP_ORIGIN = 'screengremlin://app'
 const FRIEND_WIDTH = 410
 const FRIEND_HEIGHT = 560
+const FRIEND_ACTIONS = new Set(['play', 'pat', 'bonk', 'quiet'])
 const friendAgent = createFriendAgent(product)
 let friendWindow = null
 
@@ -29,6 +30,20 @@ function friendBoundsNearPoint(point) {
   const x = clamp(Math.round(point.x + 18), area.x + 8, area.x + Math.max(8, area.width - FRIEND_WIDTH - 8))
   const y = clamp(Math.round(point.y - 110), area.y + 8, area.y + Math.max(8, area.height - FRIEND_HEIGHT - 8))
   return { x, y, width: FRIEND_WIDTH, height: FRIEND_HEIGHT }
+}
+
+function broadcastFriendAction(action, language) {
+  const safeAction = FRIEND_ACTIONS.has(action) ? action : null
+  if (!safeAction) return false
+  const safeLanguage = ['en', 'hi', 'hinglish'].includes(language) ? language : 'hinglish'
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (window.isDestroyed()) continue
+    const url = window.webContents.getURL()
+    if (url.startsWith(`${APP_ORIGIN}/`) && url.includes('mode=overlay')) {
+      window.webContents.send('screen-gremlin-v2:friend-action', { action: safeAction, language: safeLanguage })
+    }
+  }
+  return true
 }
 
 function createOrShowFriendWindow(point) {
@@ -76,8 +91,6 @@ function createOrShowFriendWindow(point) {
   })
   friendWindow.on('closed', () => { friendWindow = null })
 
-  // Clicking elsewhere should return the user to their work instead of leaving
-  // an invisible full-screen input layer behind.
   friendWindow.on('blur', () => {
     setTimeout(() => {
       if (friendWindow && !friendWindow.isDestroyed() && !friendWindow.isFocused()) friendWindow.hide()
@@ -122,6 +135,12 @@ ipcMain.handle('screen-gremlin-v2:friend-agent-status', (event) => {
   if (!friendWindow || friendWindow.isDestroyed()) return { configured: false }
   if (BrowserWindow.fromWebContents(event.sender) !== friendWindow) return { configured: false }
   return { configured: friendAgent.configured }
+})
+
+ipcMain.handle('screen-gremlin-v2:friend-action', (event, input) => {
+  if (!friendWindow || friendWindow.isDestroyed()) return false
+  if (BrowserWindow.fromWebContents(event.sender) !== friendWindow) return false
+  return broadcastFriendAction(String(input?.action || ''), String(input?.language || 'hinglish'))
 })
 
 app.on('before-quit', () => {
