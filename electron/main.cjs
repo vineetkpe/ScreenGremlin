@@ -1,6 +1,7 @@
 const fs = require('node:fs')
 const path = require('node:path')
 const crypto = require('node:crypto')
+const { pathToFileURL } = require('node:url')
 const {
   app,
   BrowserWindow,
@@ -9,10 +10,25 @@ const {
   globalShortcut,
   ipcMain,
   nativeImage,
+  net,
+  protocol,
   screen,
+  session,
   shell,
 } = require('electron')
 const product = require('./product-config.cjs')
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'screengremlin',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: false,
+      corsEnabled: false,
+    },
+  },
+])
 
 const DEFAULT_SETTINGS = {
   paused: false,
@@ -27,6 +43,10 @@ const DEFAULT_SETTINGS = {
 
 const THEMES = new Set(['lime', 'pink', 'ice', 'purple'])
 const INTENSITIES = new Set(['chill', 'normal', 'chaos'])
+const MAX_LICENSE_KEY_LENGTH = 8192
+const MAX_LICENSE_PAYLOAD_BYTES = 4096
+const MAX_EXTERNAL_URL_LENGTH = 2048
+const APP_ORIGIN = 'screengremlin://app'
 
 const LICENSE_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEA+0DdrXsoSFENxemSmGEwMR97JWst6JZMPjLXk466JiE=
@@ -47,36 +67,81 @@ function stateFilePath() {
   return path.join(app.getPath('userData'), 'state.json')
 }
 
+function normalizeHttpsUrl(rawUrl) {
+  try {
+    const raw = String(rawUrl || '').trim()
+    if (!raw || raw.length > MAX_EXTERNAL_URL_LENGTH) return null
+    const url = new URL(raw)
+    if (url.protocol !== 'https:' || url.username || url.password) return null
+    return url.toString()
+  } catch {
+    return null
+  }
+}
+
+function allowedExternalUrls() {
+  return new Set(
+    [product.checkoutUrl, product.downloadUrl, product.creatorUnlockUrl]
+      .map(normalizeHttpsUrl)
+      .filter(Boolean),
+  )
+}
+
 function verifyLicenseKey(rawKey) {
   const key = String(rawKey || '').trim()
   if (!key) return { valid: false, error: 'Enter a license key.' }
+  if (key.length > MAX_LICENSE_KEY_LENGTH) {
+    return { valid: false, error: 'License key is too long.' }
+  }
 
   try {
-    const [prefix, payloadPart, signaturePart] = key.split('.')
+    const parts = key.split('.')
+    if (parts.length !== 3) {
+      return { valid: false, error: 'This is not a ScreenGremlin license.' }
+    }
+
+    const [prefix, payloadPart, signaturePart] = parts
     if (prefix !== 'SG1' || !payloadPart || !signaturePart) {
       return { valid: false, error: 'This is not a ScreenGremlin license.' }
     }
 
     const payloadBytes = Buffer.from(payloadPart, 'base64url')
     const signature = Buffer.from(signaturePart, 'base64url')
-    const verified = crypto.verify(null, payloadBytes, LICENSE_PUBLIC_KEY, signature)
+    if (payloadBytes.length === 0 || payloadBytes.length > MAX_LICENSE_PAYLOAD_BYTES || signature.length !== 64) {
+      return { valid: false, error: 'License format is invalid.' }
+    }
 
+    const verified = crypto.verify(null, payloadBytes, LICENSE_PUBLIC_KEY, signature)
     if (!verified) return { valid: false, error: 'License signature is invalid.' }
 
     const payload = JSON.parse(payloadBytes.toString('utf8'))
+    if (!payload || typeof payload !== 'object') {
+      return { valid: false, error: 'License payload is invalid.' }
+    }
     if (payload.product !== 'screen-gremlin' || payload.tier !== 'pro') {
       return { valid: false, error: 'License is for a different product or tier.' }
     }
 
-    if (payload.expiresAt && Date.parse(payload.expiresAt) < Date.now()) {
-      return { valid: false, error: 'This license has expired.' }
+    const id = String(payload.id || '')
+    const owner = String(payload.owner || 'ScreenGremlin Pro')
+    if (!id || id.length > 128 || owner.length > 160) {
+      return { valid: false, error: 'License identity is invalid.' }
+    }
+
+    if (payload.issuedAt && Number.isNaN(Date.parse(payload.issuedAt))) {
+      return { valid: false, error: 'License issue date is invalid.' }
+    }
+    if (payload.expiresAt) {
+      const expiresAt = Date.parse(payload.expiresAt)
+      if (Number.isNaN(expiresAt)) return { valid: false, error: 'License expiry date is invalid.' }
+      if (expiresAt < Date.now()) return { valid: false, error: 'This license has expired.' }
     }
 
     return {
       valid: true,
       license: {
-        id: String(payload.id || ''),
-        owner: String(payload.owner || 'ScreenGremlin Pro'),
+        id,
+        owner,
         tier: 'pro',
         issuedAt: payload.issuedAt || null,
         expiresAt: payload.expiresAt || null,
@@ -115,7 +180,8 @@ function loadState() {
       ...DEFAULT_SETTINGS,
       ...(parsed.settings && typeof parsed.settings === 'object' ? parsed.settings : {}),
     }
-    appState.licenseKey = typeof parsed.licenseKey === 'string' ? parsed.licenseKey : ''
+    appState.settings = { ...DEFAULT_SETTINGS, ...sanitizeSettingsPatch(appState.settings) }
+    appState.licenseKey = typeof parsed.licenseKey === 'string' ? parsed.licenseKey.slice(0, MAX_LICENSE_KEY_LENGTH) : ''
 
     const licenseResult = verifyLicenseKey(appState.licenseKey)
     appState.license = licenseResult.valid ? licenseResult.license : null
@@ -130,11 +196,12 @@ function loadState() {
 
 function saveState() {
   try {
-    fs.mkdirSync(path.dirname(stateFilePath()), { recursive: true })
+    const directory = path.dirname(stateFilePath())
+    fs.mkdirSync(directory, { recursive: true, mode: 0o700 })
     fs.writeFileSync(
       stateFilePath(),
       JSON.stringify({ settings: appState.settings, licenseKey: appState.licenseKey }, null, 2),
-      'utf8',
+      { encoding: 'utf8', mode: 0o600 },
     )
   } catch (error) {
     console.error('Failed to persist ScreenGremlin settings:', error)
@@ -143,7 +210,7 @@ function saveState() {
 
 function sanitizeSettingsPatch(patch) {
   const next = {}
-  if (!patch || typeof patch !== 'object') return next
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return next
 
   if (typeof patch.paused === 'boolean') next.paused = patch.paused
   if (typeof patch.speech === 'boolean') next.speech = patch.speech
@@ -194,8 +261,47 @@ function applyWindowSettings() {
   }
 }
 
-function renderFile(window, mode) {
-  return window.loadFile(path.join(__dirname, '..', 'dist', 'index.html'), { query: { mode } })
+function registerAppProtocol() {
+  const distRoot = path.resolve(__dirname, '..', 'dist')
+
+  protocol.handle('screengremlin', (request) => {
+    try {
+      const url = new URL(request.url)
+      if (url.host !== 'app') return new Response('Not found', { status: 404 })
+
+      const requestedPath = url.pathname === '/' ? '/index.html' : decodeURIComponent(url.pathname)
+      const filePath = path.resolve(distRoot, `.${requestedPath}`)
+      const relativePath = path.relative(distRoot, filePath)
+      const unsafePath = relativePath.startsWith('..') || path.isAbsolute(relativePath)
+
+      if (unsafePath) return new Response('Bad request', { status: 400 })
+      return net.fetch(pathToFileURL(filePath).toString())
+    } catch {
+      return new Response('Bad request', { status: 400 })
+    }
+  })
+}
+
+function configureSessionSecurity() {
+  const ses = session.defaultSession
+  ses.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false))
+  ses.setPermissionCheckHandler(() => false)
+  ses.webRequest.onBeforeRequest(
+    { urls: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*'] },
+    (_details, callback) => callback({ cancel: true }),
+  )
+}
+
+function hardenWebContents(contents) {
+  contents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  contents.on('will-attach-webview', (event) => event.preventDefault())
+  contents.on('will-navigate', (event, url) => {
+    if (!url.startsWith(`${APP_ORIGIN}/`)) event.preventDefault()
+  })
+}
+
+function renderApp(window, mode) {
+  return window.loadURL(`${APP_ORIGIN}/index.html?mode=${encodeURIComponent(mode)}`)
 }
 
 function createOverlayForDisplay(display) {
@@ -224,6 +330,10 @@ function createOverlayForDisplay(display) {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      webviewTag: false,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
+      devTools: !app.isPackaged,
       backgroundThrottling: false,
     },
   })
@@ -237,7 +347,7 @@ function createOverlayForDisplay(display) {
     window.setIgnoreMouseEvents(true, { forward: true })
   }
 
-  renderFile(window, 'overlay')
+  renderApp(window, 'overlay')
   window.once('ready-to-show', () => {
     if (!appState.settings.paused) window.showInactive()
   })
@@ -287,10 +397,14 @@ function createSettingsWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      webviewTag: false,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
+      devTools: !app.isPackaged,
     },
   })
 
-  renderFile(settingsWindow, 'settings')
+  renderApp(settingsWindow, 'settings')
   settingsWindow.once('ready-to-show', () => {
     settingsWindow?.show()
     settingsWindow?.focus()
@@ -388,12 +502,15 @@ function registerIpc() {
 
   ipcMain.handle('screen-gremlin:open-external', async (event, rawUrl) => {
     if (!senderIsKnown(event)) return false
+    const normalized = normalizeHttpsUrl(rawUrl)
+    if (!normalized || !allowedExternalUrls().has(normalized)) return false
+
     try {
-      const url = new URL(String(rawUrl || ''))
-      if (url.protocol !== 'https:') return false
-      await shell.openExternal(url.toString())
+      await shell.openExternal(normalized)
       return true
-    } catch { return false }
+    } catch {
+      return false
+    }
   })
 
   ipcMain.handle('screen-gremlin:close-settings', (event) => {
@@ -403,11 +520,15 @@ function registerIpc() {
   })
 }
 
+app.on('web-contents-created', (_event, contents) => hardenWebContents(contents))
+
 if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
   app.on('second-instance', () => createSettingsWindow())
   app.whenReady().then(() => {
+    registerAppProtocol()
+    configureSessionSecurity()
     loadState()
     applyLoginSetting()
     registerIpc()
