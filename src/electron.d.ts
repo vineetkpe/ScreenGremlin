@@ -2,6 +2,8 @@ type ScreenGremlinIntensity = 'chill' | 'normal' | 'chaos'
 type ScreenGremlinTheme = 'lime' | 'pink' | 'ice' | 'purple'
 type ScreenGremlinPersonality = 'cute' | 'savage' | 'lazy' | 'chaotic' | 'gamer' | 'office'
 type ScreenGremlinAccessory = 'none' | 'cap' | 'glasses' | 'headphones' | 'crown'
+type ScreenGremlinFriendAction = 'play' | 'pat' | 'bonk' | 'quiet'
+type ScreenGremlinFriendLanguage = 'en' | 'hi' | 'hinglish'
 
 type ScreenGremlinSettings = {
   paused: boolean
@@ -48,13 +50,13 @@ type ScreenGremlinActivationResult =
 
 type ScreenGremlinFriendChatInput = {
   message: string
-  language: 'en' | 'hi' | 'hinglish'
+  language: ScreenGremlinFriendLanguage
   voiceStyle: 'female' | 'male' | 'cute' | 'calm'
   history: Array<{ role: 'user' | 'assistant'; text: string }>
 }
 
 type ScreenGremlinFriendChatResult =
-  | { ok: true; reply: { text: string; expression: string; mood: string } }
+  | { ok: true; reply: { text: string; expression: string; mood: string; action?: ScreenGremlinFriendAction } }
   | { ok: false; reason: string }
 
 interface Window {
@@ -70,10 +72,12 @@ interface Window {
     quitApp(): Promise<boolean>
     setInteractive(interactive: boolean): void
     onStateChanged(callback: (state: ScreenGremlinState) => void): () => void
+    onFriendAction(callback: (event: { action: ScreenGremlinFriendAction; language: ScreenGremlinFriendLanguage }) => void): () => void
   }
   screenGremlinFriend?: {
     close(): Promise<boolean>
     chat(input: ScreenGremlinFriendChatInput): Promise<ScreenGremlinFriendChatResult>
     getAgentStatus(): Promise<{ configured: boolean }>
+    triggerAction(action: ScreenGremlinFriendAction, language: ScreenGremlinFriendLanguage): Promise<boolean>
   }
 }
