@@ -6,6 +6,12 @@ import { respondLocally, type FriendExpression, type FriendLanguage } from './fr
 type VoiceStyle = 'female' | 'male' | 'cute' | 'calm'
 type ChatItem = { id: string; from: 'user' | 'friend'; text: string; expression?: FriendExpression }
 
+type AgentReply = {
+  ok: boolean
+  reason?: string
+  reply?: { text: string; expression?: FriendExpression; mood?: string }
+}
+
 const PREF_KEY = 'screen-gremlin:friend-prefs:v1'
 const CHAT_KEY = 'screen-gremlin:friend-chat:v1'
 
@@ -83,6 +89,8 @@ export default function FriendBubble() {
   const [chat, setChat] = useState<ChatItem[]>(readChat)
   const [draft, setDraft] = useState('')
   const [expression, setExpression] = useState<FriendExpression>('happy')
+  const [agentConfigured, setAgentConfigured] = useState(false)
+  const [thinking, setThinking] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -92,6 +100,7 @@ export default function FriendBubble() {
   useEffect(() => {
     inputRef.current?.focus()
     const timer = window.setTimeout(() => inputRef.current?.focus(), 80)
+    void window.screenGremlinFriend?.getAgentStatus().then((status) => setAgentConfigured(Boolean(status?.configured)))
     return () => window.clearTimeout(timer)
   }, [])
 
@@ -111,11 +120,13 @@ export default function FriendBubble() {
     speak(text, prefs)
   }
 
-  function submit() {
+  async function submit() {
     const text = draft.trim().slice(0, 1200)
-    if (!text) return
+    if (!text || thinking) return
     setDraft('')
-    setChat((before) => [...before, { id: uid(), from: 'user', text }])
+    const userItem: ChatItem = { id: uid(), from: 'user', text }
+    const snapshot = [...chat, userItem]
+    setChat(snapshot)
 
     const lower = text.toLowerCase()
     const looksLikeUtility = /^(note|todo|snippet|remind)\s+/.test(lower)
@@ -125,9 +136,30 @@ export default function FriendBubble() {
       return
     }
 
-    const reply = respondLocally(text, prefs.language)
-    addReply(reply.text, reply.expression)
-    localStorage.setItem('screen-gremlin:friend-last-emotion:v1', JSON.stringify({ mood: reply.mood, expression: reply.expression, at: Date.now() }))
+    setThinking(true)
+    setExpression('thinking')
+    try {
+      const agentResult = await window.screenGremlinFriend?.chat({
+        message: text,
+        language: prefs.language,
+        voiceStyle: prefs.voiceStyle,
+        history: snapshot.slice(-12).map((item) => ({ role: item.from === 'friend' ? 'assistant' : 'user', text: item.text })),
+      }) as AgentReply | undefined
+
+      if (agentResult?.ok && agentResult.reply?.text) {
+        const nextExpression = agentResult.reply.expression || 'happy'
+        addReply(agentResult.reply.text, nextExpression)
+        localStorage.setItem('screen-gremlin:friend-last-emotion:v1', JSON.stringify({ mood: agentResult.reply.mood || 'happy', expression: nextExpression, at: Date.now() }))
+        return
+      }
+
+      const fallback = respondLocally(text, prefs.language)
+      addReply(fallback.text, fallback.expression)
+      localStorage.setItem('screen-gremlin:friend-last-emotion:v1', JSON.stringify({ mood: fallback.mood, expression: fallback.expression, at: Date.now() }))
+    } finally {
+      setThinking(false)
+      window.setTimeout(() => inputRef.current?.focus(), 0)
+    }
   }
 
   function clearChat() {
@@ -151,7 +183,7 @@ export default function FriendBubble() {
             customEyes={companion.customEyes}
           />
         </div>
-        <div><strong>{title}</strong><span>{expression}</span></div>
+        <div><strong>{title}</strong><span>{thinking ? 'thinking…' : expression}</span></div>
         <button className="friend-window__close" type="button" aria-label="Close friend chat" onClick={() => void window.screenGremlinFriend?.close()}>×</button>
       </header>
 
@@ -176,6 +208,7 @@ export default function FriendBubble() {
           <span>Try “I’m bored”, “pakdo mujhe”, “todo finish project”, or just tell me about your day.</span>
         </div>}
         {chat.map((item) => <div key={item.id} className={`friend-msg friend-msg--${item.from}`}><span>{item.text}</span></div>)}
+        {thinking && <div className="friend-msg friend-msg--friend"><span>…</span></div>}
         <div ref={bottomRef} />
       </section>
 
@@ -186,11 +219,11 @@ export default function FriendBubble() {
         <button type="button" onClick={() => { setDraft('remind 30m '); inputRef.current?.focus() }}>Reminder</button>
       </section>
 
-      <form className="friend-window__composer" onSubmit={(event) => { event.preventDefault(); submit() }}>
-        <input ref={inputRef} autoFocus value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={prefs.language === 'hinglish' ? 'Bol, kya scene hai?' : prefs.language === 'hi' ? 'Bolo…' : 'Talk to me…'} maxLength={1200} />
-        <button type="submit">Send</button>
+      <form className="friend-window__composer" onSubmit={(event) => { event.preventDefault(); void submit() }}>
+        <input ref={inputRef} autoFocus disabled={thinking} value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={prefs.language === 'hinglish' ? 'Bol, kya scene hai?' : prefs.language === 'hi' ? 'Bolo…' : 'Talk to me…'} maxLength={1200} />
+        <button type="submit" disabled={thinking}>Send</button>
       </form>
-      <footer><button type="button" onClick={clearChat}>Clear chat</button><span>Local fallback brain · AI backend next</span></footer>
+      <footer><button type="button" onClick={clearChat}>Clear chat</button><span>{agentConfigured ? 'AI friend service connected' : 'Offline friend brain'}</span></footer>
     </main>
   )
 }
